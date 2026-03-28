@@ -7,6 +7,12 @@
 #include "telemetry.h"
 #include "lcd.h"
 
+static bool isI2CDevicePresent(uint8_t address)
+{
+    Wire.beginTransmission(address);
+    return Wire.endTransmission() == 0;
+}
+
 //===== CORE0: SETUP & LOOP (DUAL CORE MODE) =====
 void coreTwo(void *pvParameters)
 {
@@ -40,8 +46,32 @@ void setup()
     pwmMax = pow(2, pwmResolution) - 1;
     pwmMaxLimited = (PWM_MaxDC * pwmMax) / 100.000;
 
+    Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQUENCY);
+    Serial.printf("> I2C initialized (SDA=%d, SCL=%d, FREQ=%d)\n", I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQUENCY);
+
+    LCD_Connected = isI2CDevicePresent(0x27) || isI2CDevicePresent(0x3F);
+    if (LCD_Connected)
+    {
+        lcd.init();
+        lcd.backlight();
+        Serial.println("> LCD detected on I2C");
+    }
+    else
+    {
+        enableLCD = 0;
+        Serial.println("> WARNING: LCD not detected. LCD menu disabled.");
+    }
+
     ADC_SetGain();
-    ads.begin();
+    ADS_Connected = ads.begin(0x48) || ads.begin(0x49) || ads.begin(0x4A) || ads.begin(0x4B);
+    if (ADS_Connected)
+    {
+        Serial.println("> ADS1015 detected on I2C");
+    }
+    else
+    {
+        Serial.println("> WARNING: ADS1015 not detected. ADC reads disabled.");
+    }
 
     buck_Disable();
 

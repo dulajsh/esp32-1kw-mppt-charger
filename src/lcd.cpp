@@ -8,6 +8,10 @@ extern int buttonSelectCommand;
 
 void lcdBacklight_Wake()
 {
+    if (enableLCD == 0 || LCD_Connected == 0)
+    {
+        return;
+    }
     lcd.setBacklight(HIGH);
     prevLCDBackLMillis = millis();
 }
@@ -62,7 +66,10 @@ void lcdBacklight()
         if (currentLCDBackLMillis - prevLCDBackLMillis >= backLightInterval)
         {
             prevLCDBackLMillis = currentLCDBackLMillis;
-            lcd.setBacklight(LOW);
+            if (LCD_Connected == 1)
+            {
+                lcd.setBacklight(LOW);
+            }
         }
     }
 }

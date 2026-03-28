@@ -68,31 +68,42 @@ void Read_Sensors()
     VSO = 0.0000;
     CSI = 0.0000;
 
-    for (int i = 0; i < avgCountVS; i++)
+    if (ADS_Connected)
     {
-        VSI = VSI + ads.computeVolts(ads.readADC_SingleEnded(3));
-        VSO = VSO + ads.computeVolts(ads.readADC_SingleEnded(1));
-    }
-    voltageInput = (VSI / avgCountVS) * inVoltageDivRatio;
-    voltageOutput = (VSO / avgCountVS) * outVoltageDivRatio;
+        for (int i = 0; i < avgCountVS; i++)
+        {
+            VSI = VSI + ads.computeVolts(ads.readADC_SingleEnded(3));
+            VSO = VSO + ads.computeVolts(ads.readADC_SingleEnded(1));
+        }
+        voltageInput = (VSI / avgCountVS) * inVoltageDivRatio;
+        voltageOutput = (VSO / avgCountVS) * outVoltageDivRatio;
 
-    for (int i = 0; i < avgCountCS; i++)
-    {
-        CSI = CSI + ads.computeVolts(ads.readADC_SingleEnded(2));
-    }
-    CSI_converted = (CSI / avgCountCS) * 1.3300;
-    currentInput = ((CSI_converted - currentMidPoint) * -1) / currentSensV;
-    if (currentInput < 0)
-    {
-        currentInput = 0.0000;
-    }
-    if (voltageOutput <= 0)
-    {
-        currentOutput = 0.0000;
+        for (int i = 0; i < avgCountCS; i++)
+        {
+            CSI = CSI + ads.computeVolts(ads.readADC_SingleEnded(2));
+        }
+        CSI_converted = (CSI / avgCountCS) * 1.3300;
+        currentInput = ((CSI_converted - currentMidPoint) * -1) / currentSensV;
+        if (currentInput < 0)
+        {
+            currentInput = 0.0000;
+        }
+        if (voltageOutput <= 0)
+        {
+            currentOutput = 0.0000;
+        }
+        else
+        {
+            currentOutput = (voltageInput * currentInput) / voltageOutput;
+        }
     }
     else
     {
-        currentOutput = (voltageInput * currentInput) / voltageOutput;
+        voltageInput = 0.0000;
+        voltageOutput = 0.0000;
+        currentInput = 0.0000;
+        currentOutput = 0.0000;
+        CSI_converted = 0.0000;
     }
 
     if (voltageInput <= 3 && voltageOutput <= 3)
@@ -108,7 +119,7 @@ void Read_Sensors()
         inputSource = 2;
     }
 
-    if (buckEnable == 0 && FLV == 0 && OOV == 0)
+    if (ADS_Connected && buckEnable == 0 && FLV == 0 && OOV == 0)
     {
         currentMidPoint = ((CSI / avgCountCS) * 1.3300) - 0.003;
     }

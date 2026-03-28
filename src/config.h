@@ -28,6 +28,11 @@ extern Adafruit_ADS1015 ads;
 #define buttonBack 19
 #define buttonSelect 23
 
+//===== I2C BUS DEFINITIONS =====
+#define I2C_SDA_PIN 21
+#define I2C_SCL_PIN 22
+#define I2C_FREQUENCY 100000
+
 //===== WiFi CREDENTIALS =====
 extern char auth[];
 extern char ssid[];
@@ -109,6 +114,8 @@ extern bool IOC;
 extern bool OOV;
 extern bool OOC;
 extern bool OTE;
+extern bool ADS_Connected;
+extern bool LCD_Connected;
 
 //===== SYSTEM PARAMETERS (INTEGERS) =====
 extern int inputSource;
