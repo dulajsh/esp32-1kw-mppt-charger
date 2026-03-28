@@ -330,9 +330,17 @@ void LCD_Menu()
         longPressTime = 3000,
         longPressInterval = 500,
         shortPressInterval = 100;
+    const int settingsRefreshInterval = 150;
 
     if (settingMode == 1)
     {
+        currentLCDMillis = millis();
+        if (currentLCDMillis - prevLCDMillis < settingsRefreshInterval)
+        {
+            return;
+        }
+        prevLCDMillis = currentLCDMillis;
+
         chargingPause = 1;
 
         if (setMenuPage == 0)
