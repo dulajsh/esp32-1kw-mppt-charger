@@ -1,0 +1,187 @@
+# ESP32 1kW MPPT Solar Charge Controller (Improved)
+
+Firmware for a high-power DIY solar charge controller using ESP32, ADS1015, and a buck stage with MPPT/CV behavior.
+
+Reference project (inspiration):
+- https://www.instructables.com/DIY-1kW-MPPT-Solar-Charge-Controller/
+
+This fork focuses on cleaner structure, practical protection logic, easier tuning, and smoother PlatformIO development.
+
+## At A Glance
+
+| Area | Details |
+|---|---|
+| MCU | ESP32 (PlatformIO target: featheresp32) |
+| Control | PWM buck control with MPPT mode + non-MPPT regulated mode |
+| Sensing | ADS1015 for voltage/current + NTC temperature input |
+| UI | 16x2 I2C LCD menu + hardware buttons |
+| Telemetry | Serial telemetry + optional Blynk cloud telemetry |
+| Persistence | EEPROM-based settings load/save |
+| Safety | Overcurrent, overvoltage, undervoltage, overtemperature, battery/source checks |
+
+## Quick Start
+
+### 1. Requirements
+- VS Code with PlatformIO extension (or PlatformIO Core CLI)
+- ESP32 board connected by USB
+- Power stage disconnected from high-power source for first boot tests
+
+### 2. Build
+```bash
+pio run
+```
+
+### 3. Upload
+```bash
+pio run -t upload
+```
+
+### 4. Monitor
+```bash
+pio device monitor -b 500000
+```
+
+### 5. First Boot Checks
+- Confirm LCD boots and shows firmware info
+- Verify voltage readings are stable and realistic
+- Verify temperature is reasonable at room conditions
+- Confirm PWM starts low and no protection flags are active
+
+## Feature Overview
+
+### Control and Charging
+- MPPT algorithm path with perturb/observe-style behavior
+- Alternate non-MPPT regulated mode
+- Predictive PWM initialization to speed startup behavior
+- PWM duty limiting based on configured max duty cycle
+
+### Protection and Reliability
+- Input undervoltage detection (IUV)
+- Input overcurrent detection (IOC)
+- Output overvoltage detection (OOV)
+- Output overcurrent detection (OOC)
+- Overtemperature detection (OTE)
+- Flat voltage and battery-not-connected logic
+- Backflow MOSFET control to reduce reverse flow risk
+
+### User Experience
+- Local LCD menu for live status and settings
+- Persistent user settings in EEPROM
+- Runtime metrics: power, Wh/kWh/MWh, SOC estimate, loop time
+- Optional Blynk integration when library is present
+
+## Firmware Architecture
+
+Dual-core split:
+- Core 1 loop: sensors, protection, charging algorithm, onboard telemetry, LCD menu
+- Core 0 task: Wi-Fi setup and wireless telemetry service
+
+## Project Layout
+
+```text
+.
+|-- platformio.ini
+|-- src/
+|   |-- main.cpp
+|   |-- charging.cpp/.h
+|   |-- protection.cpp/.h
+|   |-- sensors.cpp/.h
+|   |-- telemetry.cpp/.h
+|   |-- lcd.cpp/.h
+|   |-- system.cpp/.h
+|   |-- globals.cpp
+|   `-- config.h
+|-- include/
+|-- lib/
+`-- test/
+```
+
+## Pin Mapping
+
+| Signal | GPIO |
+|---|---|
+| backflow_MOSFET | 27 |
+| buck_IN (PWM) | 33 |
+| buck_EN | 32 |
+| LED | 2 |
+| FAN | 16 |
+| ADC_ALERT | 34 |
+| TempSensor | 35 |
+| buttonLeft | 18 |
+| buttonRight | 17 |
+| buttonBack | 19 |
+| buttonSelect | 23 |
+
+## Configuration Guide
+
+Main tuning location:
+- `src/globals.cpp` (default values)
+- `src/config.h` (extern declarations and shared parameters)
+
+Recommended parameters to verify before real charging tests:
+
+| Group | Parameters |
+|---|---|
+| Battery window | `voltageBatteryMax`, `voltageBatteryMin` |
+| Charge limit | `currentCharging` |
+| Absolute safety caps | `currentInAbsolute`, `currentOutAbsolute`, `temperatureMax` |
+| PWM | `pwmFrequency`, `pwmResolution`, `PWM_MaxDC`, `PPWM_margin` |
+| Voltage calibration | `inVoltageDivRatio`, `outVoltageDivRatio` |
+| Current calibration | `currentMidPoint`, `currentSensV` |
+| Thermal calibration | `ntcResistance` |
+
+## Telemetry Setup
+
+Credentials currently live in `src/globals.cpp`:
+- `auth`
+- `ssid`
+- `pass`
+
+Behavior:
+- If `BlynkSimpleEsp32.h` is present, wireless telemetry is enabled.
+- If Blynk headers are not present, firmware still compiles and runs without Blynk.
+
+## Validation Checklist (Recommended)
+
+Before connecting full-power hardware:
+- Validate ADC voltage scaling with a trusted multimeter
+- Validate current sensor offset and slope at no-load and known load
+- Verify fan trigger and overtemperature threshold behavior
+- Force low-voltage and overcurrent conditions safely to confirm fault handling
+- Confirm EEPROM save/load and menu setting persistence
+
+## Safety Notice
+
+High-current DC systems can be dangerous.
+
+Minimum safety practices:
+- Use proper fusing and DC-rated breakers
+- Use correct wire gauge and secure terminations
+- Provide heatsinking and airflow for power components
+- Keep low-voltage testing isolated from high-energy battery banks
+
+You are responsible for assembly, validation, and operation of your hardware.
+
+## Roadmap
+
+- Move sensitive credentials to safer configuration handling
+- Add unit tests for charging/protection logic
+- Add persistent fault history and event timestamps
+- Implement Bluetooth telemetry path
+- Add battery chemistry presets (for example, lead-acid and LiFePO4)
+
+## Attribution
+
+Original inspiration/reference:
+- https://www.instructables.com/DIY-1kW-MPPT-Solar-Charge-Controller/
+
+If you reuse this project, keep attribution to both the reference design and this improved implementation.
+
+## Contributing
+
+Contributions are welcome.
+
+For pull requests, include:
+- What changed
+- Why it changed
+- How it was tested (logs, measurements, or hardware test notes)
