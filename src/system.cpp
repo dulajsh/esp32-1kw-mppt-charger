@@ -117,6 +117,7 @@ void saveSettings()
     EEPROM.write(8, temperatureFan);
     EEPROM.write(9, temperatureMax);
     EEPROM.write(10, enableWiFi);
+    EEPROM.write(11, flashMemLoad);
     EEPROM.write(13, backlightSleepMode);
     EEPROM.commit();
 }
@@ -131,7 +132,14 @@ void initializeFlashAutoload()
 {
     if (disableFlashAutoLoad == 0)
     {
-        flashMemLoad = EEPROM.read(11);
+        uint8_t savedAutoloadFlag = EEPROM.read(11);
+        if (savedAutoloadFlag != 0 && savedAutoloadFlag != 1)
+        {
+            savedAutoloadFlag = 1;
+            EEPROM.write(11, savedAutoloadFlag);
+            EEPROM.commit();
+        }
+        flashMemLoad = savedAutoloadFlag;
         if (flashMemLoad == 1)
         {
             loadSettings();

@@ -53,6 +53,7 @@ int avgCountTS = 500;
 
 float inVoltageDivRatio = 40.2156;
 float outVoltageDivRatio = 24.5000;
+float outVoltageOffset = 0.3400;
 float vOutSystemMax = 50.0000;
 float cOutSystemMax = 50.0000;
 float ntcResistance = 10000.00;
@@ -76,7 +77,7 @@ bool chargingPause = 0;
 bool lowPowerMode = 0;
 bool settingMode = 0;
 bool boolTemp = 0;
-bool flashMemLoad = 0;
+bool flashMemLoad = 1;
 bool confirmationMenu = 0;
 bool WIFI = 0;
 bool BNC = 0;

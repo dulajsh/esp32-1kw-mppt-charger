@@ -76,7 +76,7 @@ void Read_Sensors()
             VSO = VSO + ads.computeVolts(ads.readADC_SingleEnded(1));
         }
         voltageInput = (VSI / avgCountVS) * inVoltageDivRatio;
-        voltageOutput = (VSO / avgCountVS) * outVoltageDivRatio;
+        voltageOutput = ((VSO / avgCountVS) * outVoltageDivRatio) + outVoltageOffset;
 
         for (int i = 0; i < avgCountCS; i++)
         {

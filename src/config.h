@@ -80,6 +80,7 @@ extern int avgCountCS;
 extern int avgCountTS;
 extern float inVoltageDivRatio;
 extern float outVoltageDivRatio;
+extern float outVoltageOffset;
 extern float vOutSystemMax;
 extern float cOutSystemMax;
 extern float ntcResistance;
