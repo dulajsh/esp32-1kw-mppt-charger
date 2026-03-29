@@ -78,6 +78,10 @@ void factoryReset()
     EEPROM.write(10, 1);
     EEPROM.write(11, 1);
     EEPROM.write(13, 0);
+    EEPROM.write(14, 3);
+    EEPROM.write(15, 232);
+    EEPROM.write(16, 3);
+    EEPROM.write(17, 232);
     EEPROM.commit();
     loadSettings();
 }
@@ -95,6 +99,20 @@ void loadSettings()
     enableWiFi = EEPROM.read(10);
     flashMemLoad = EEPROM.read(11);
     backlightSleepMode = EEPROM.read(13);
+
+    int outVoltageOffsetRaw = (EEPROM.read(14) << 8) | EEPROM.read(15);
+    if (outVoltageOffsetRaw < 0 || outVoltageOffsetRaw > 2000)
+    {
+        outVoltageOffsetRaw = 1000;
+    }
+    outVoltageOffset = (outVoltageOffsetRaw - 1000) * 0.01;
+
+    int inVoltageOffsetRaw = (EEPROM.read(16) << 8) | EEPROM.read(17);
+    if (inVoltageOffsetRaw < 0 || inVoltageOffsetRaw > 2000)
+    {
+        inVoltageOffsetRaw = 1000;
+    }
+    inVoltageOffset = (inVoltageOffsetRaw - 1000) * 0.01;
 }
 
 void saveSettings()
@@ -119,6 +137,16 @@ void saveSettings()
     EEPROM.write(10, enableWiFi);
     EEPROM.write(11, flashMemLoad);
     EEPROM.write(13, backlightSleepMode);
+
+    int outVoltageOffsetRaw = (int)(outVoltageOffset * 100.0) + 1000;
+    outVoltageOffsetRaw = constrain(outVoltageOffsetRaw, 0, 2000);
+    EEPROM.write(14, (outVoltageOffsetRaw >> 8) & 0xFF);
+    EEPROM.write(15, outVoltageOffsetRaw & 0xFF);
+
+    int inVoltageOffsetRaw = (int)(inVoltageOffset * 100.0) + 1000;
+    inVoltageOffsetRaw = constrain(inVoltageOffsetRaw, 0, 2000);
+    EEPROM.write(16, (inVoltageOffsetRaw >> 8) & 0xFF);
+    EEPROM.write(17, inVoltageOffsetRaw & 0xFF);
     EEPROM.commit();
 }
 

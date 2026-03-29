@@ -326,7 +326,7 @@ void LCD_Menu()
 {
     int
         menuPages = 4,
-        subMenuPages = 12,
+        subMenuPages = 14,
         longPressTime = 3000,
         longPressInterval = 500,
         shortPressInterval = 100;
@@ -1305,6 +1305,192 @@ void LCD_Menu()
 
         else if (subMenuPage == 11)
         {
+            lcd.setCursor(0, 0);
+            lcd.print("VOUT OFFSET CAL ");
+            if (setMenuPage == 1)
+            {
+                lcd.setCursor(0, 1);
+                lcd.print(" >");
+            }
+            else
+            {
+                lcd.setCursor(0, 1);
+                lcd.print("= ");
+            }
+            lcd.setCursor(2, 1);
+            lcd.print(outVoltageOffset, 2);
+            lcd.print("V");
+            lcd.print("            ");
+
+            if (setMenuPage == 0)
+            {
+                floatTemp = outVoltageOffset;
+            }
+            else
+            {
+                if (digitalRead(buttonBack) == 1)
+                {
+                    while (digitalRead(buttonBack) == 1)
+                    {
+                    }
+                    outVoltageOffset = floatTemp;
+                    cancelledMessageLCD();
+                    setMenuPage = 0;
+                }
+                if (digitalRead(buttonSelect) == 1)
+                {
+                    while (digitalRead(buttonSelect) == 1)
+                    {
+                    }
+                    saveSettings();
+                    setMenuPage = 0;
+                    savedMessageLCD();
+                }
+                currentMenuSetMillis = millis();
+                if (digitalRead(buttonRight) == 1)
+                {
+                    while (digitalRead(buttonRight) == 1)
+                    {
+                        if (millis() - currentMenuSetMillis > longPressTime)
+                        {
+                            outVoltageOffset += 0.10;
+                            outVoltageOffset = constrain(outVoltageOffset, -5.0, 5.0);
+                            lcd.setCursor(2, 1);
+                            lcd.print(outVoltageOffset, 2);
+                            delay(longPressInterval);
+                        }
+                        else
+                        {
+                            outVoltageOffset += 0.01;
+                            outVoltageOffset = constrain(outVoltageOffset, -5.0, 5.0);
+                            lcd.setCursor(2, 1);
+                            lcd.print(outVoltageOffset, 2);
+                            delay(shortPressInterval);
+                        }
+                        lcd.print("V   ");
+                    }
+                }
+                else if (digitalRead(buttonLeft) == 1)
+                {
+                    while (digitalRead(buttonLeft) == 1)
+                    {
+                        if (millis() - currentMenuSetMillis > longPressTime)
+                        {
+                            outVoltageOffset -= 0.10;
+                            outVoltageOffset = constrain(outVoltageOffset, -5.0, 5.0);
+                            lcd.setCursor(2, 1);
+                            lcd.print(outVoltageOffset, 2);
+                            delay(longPressInterval);
+                        }
+                        else
+                        {
+                            outVoltageOffset -= 0.01;
+                            outVoltageOffset = constrain(outVoltageOffset, -5.0, 5.0);
+                            lcd.setCursor(2, 1);
+                            lcd.print(outVoltageOffset, 2);
+                            delay(shortPressInterval);
+                        }
+                        lcd.print("V   ");
+                    }
+                }
+            }
+        }
+
+        else if (subMenuPage == 12)
+        {
+            lcd.setCursor(0, 0);
+            lcd.print("VIN OFFSET CAL  ");
+            if (setMenuPage == 1)
+            {
+                lcd.setCursor(0, 1);
+                lcd.print(" >");
+            }
+            else
+            {
+                lcd.setCursor(0, 1);
+                lcd.print("= ");
+            }
+            lcd.setCursor(2, 1);
+            lcd.print(inVoltageOffset, 2);
+            lcd.print("V");
+            lcd.print("            ");
+
+            if (setMenuPage == 0)
+            {
+                floatTemp = inVoltageOffset;
+            }
+            else
+            {
+                if (digitalRead(buttonBack) == 1)
+                {
+                    while (digitalRead(buttonBack) == 1)
+                    {
+                    }
+                    inVoltageOffset = floatTemp;
+                    cancelledMessageLCD();
+                    setMenuPage = 0;
+                }
+                if (digitalRead(buttonSelect) == 1)
+                {
+                    while (digitalRead(buttonSelect) == 1)
+                    {
+                    }
+                    saveSettings();
+                    setMenuPage = 0;
+                    savedMessageLCD();
+                }
+                currentMenuSetMillis = millis();
+                if (digitalRead(buttonRight) == 1)
+                {
+                    while (digitalRead(buttonRight) == 1)
+                    {
+                        if (millis() - currentMenuSetMillis > longPressTime)
+                        {
+                            inVoltageOffset += 0.10;
+                            inVoltageOffset = constrain(inVoltageOffset, -5.0, 5.0);
+                            lcd.setCursor(2, 1);
+                            lcd.print(inVoltageOffset, 2);
+                            delay(longPressInterval);
+                        }
+                        else
+                        {
+                            inVoltageOffset += 0.01;
+                            inVoltageOffset = constrain(inVoltageOffset, -5.0, 5.0);
+                            lcd.setCursor(2, 1);
+                            lcd.print(inVoltageOffset, 2);
+                            delay(shortPressInterval);
+                        }
+                        lcd.print("V   ");
+                    }
+                }
+                else if (digitalRead(buttonLeft) == 1)
+                {
+                    while (digitalRead(buttonLeft) == 1)
+                    {
+                        if (millis() - currentMenuSetMillis > longPressTime)
+                        {
+                            inVoltageOffset -= 0.10;
+                            inVoltageOffset = constrain(inVoltageOffset, -5.0, 5.0);
+                            lcd.setCursor(2, 1);
+                            lcd.print(inVoltageOffset, 2);
+                            delay(longPressInterval);
+                        }
+                        else
+                        {
+                            inVoltageOffset -= 0.01;
+                            inVoltageOffset = constrain(inVoltageOffset, -5.0, 5.0);
+                            lcd.setCursor(2, 1);
+                            lcd.print(inVoltageOffset, 2);
+                            delay(shortPressInterval);
+                        }
+                        lcd.print("V   ");
+                    }
+                }
+            }
+        }
+
+        else if (subMenuPage == 13)
+        {
             if (setMenuPage == 0)
             {
                 lcd.setCursor(0, 0);
@@ -1368,7 +1554,7 @@ void LCD_Menu()
             }
         }
 
-        else if (subMenuPage == 12)
+        else if (subMenuPage == 14)
         {
             if (setMenuPage == 0)
             {

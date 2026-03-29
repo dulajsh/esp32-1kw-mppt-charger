@@ -52,8 +52,9 @@ int avgCountCS = 4;
 int avgCountTS = 500;
 
 float inVoltageDivRatio = 40.2156;
+float inVoltageOffset = 0.000;
 float outVoltageDivRatio = 24.5000;
-float outVoltageOffset = 0.3400;
+float outVoltageOffset = 0.000;
 float vOutSystemMax = 50.0000;
 float cOutSystemMax = 50.0000;
 float ntcResistance = 10000.00;

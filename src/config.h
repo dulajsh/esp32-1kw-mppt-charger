@@ -79,6 +79,7 @@ extern int avgCountVS;
 extern int avgCountCS;
 extern int avgCountTS;
 extern float inVoltageDivRatio;
+extern float inVoltageOffset;
 extern float outVoltageDivRatio;
 extern float outVoltageOffset;
 extern float vOutSystemMax;
