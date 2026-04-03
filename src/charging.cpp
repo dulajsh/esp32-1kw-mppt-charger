@@ -3,91 +3,91 @@
 
 namespace
 {
-enum BatteryPreset
-{
-    PRESET_CUSTOM = 0,
-    PRESET_LEAD_ACID = 1,
-    PRESET_AGM = 2,
-    PRESET_GEL = 3,
-    PRESET_LIFEPO4 = 4,
-    PRESET_LI_ION = 5
-};
-
-enum ChargingStage
-{
-    STAGE_BULK = 0,
-    STAGE_ABSORPTION = 1,
-    STAGE_FLOAT = 2
-};
-
-void setChargingStage(ChargingStage stage)
-{
-    if (chargingStage != stage)
+    enum BatteryPreset
     {
-        chargingStage = stage;
-        chargingStageStartMillis = millis();
-    }
-}
+        PRESET_CUSTOM = 0,
+        PRESET_LEAD_ACID = 1,
+        PRESET_AGM = 2,
+        PRESET_GEL = 3,
+        PRESET_LIFEPO4 = 4,
+        PRESET_LI_ION = 5
+    };
 
-void refreshCustomProfileTargets()
-{
-    batteryAbsorptionVoltage = voltageBatteryMax;
-    batteryFloatVoltage = voltageBatteryMax * 0.9670;
-    batteryRechargeVoltage = voltageBatteryMax * 0.9240;
-    batteryAbsExitCurrent = max(0.5f, currentCharging * 0.10f);
-    batteryFloatEnabled = true;
-    batteryAbsorptionTimeoutMs = 7200000;
-}
+    enum ChargingStage
+    {
+        STAGE_BULK = 0,
+        STAGE_ABSORPTION = 1,
+        STAGE_FLOAT = 2
+    };
 
-void updateStageTargets()
-{
-    if (chargingStage == STAGE_BULK)
+    void setChargingStage(ChargingStage stage)
     {
-        chargeVoltageTarget = batteryAbsorptionVoltage;
-        chargeCurrentTarget = currentCharging;
-    }
-    else if (chargingStage == STAGE_ABSORPTION)
-    {
-        chargeVoltageTarget = batteryAbsorptionVoltage;
-        chargeCurrentTarget = max(batteryAbsExitCurrent, currentCharging * 0.50f);
-    }
-    else
-    {
-        chargeVoltageTarget = batteryFloatEnabled ? batteryFloatVoltage : batteryAbsorptionVoltage;
-        chargeCurrentTarget = max(batteryAbsExitCurrent, currentCharging * 0.20f);
-    }
-}
-
-void updateChargingStageTransitions()
-{
-    unsigned long stageElapsed = millis() - chargingStageStartMillis;
-
-    if (chargingStage == STAGE_BULK)
-    {
-        if (voltageOutput >= batteryAbsorptionVoltage - 0.15f)
+        if (chargingStage != stage)
         {
-            setChargingStage(STAGE_ABSORPTION);
-        }
-    }
-    else if (chargingStage == STAGE_ABSORPTION)
-    {
-        bool currentTapered = (currentOutput <= batteryAbsExitCurrent) && (voltageOutput >= batteryAbsorptionVoltage - 0.10f);
-        bool absorbTimedOut = stageElapsed >= batteryAbsorptionTimeoutMs;
-        if (currentTapered || absorbTimedOut)
-        {
-            setChargingStage(STAGE_FLOAT);
-        }
-    }
-    else
-    {
-        if (voltageOutput <= batteryRechargeVoltage)
-        {
-            setChargingStage(STAGE_BULK);
+            chargingStage = stage;
+            chargingStageStartMillis = millis();
         }
     }
 
-    updateStageTargets();
-}
+    void refreshCustomProfileTargets()
+    {
+        batteryAbsorptionVoltage = voltageBatteryMax;
+        batteryFloatVoltage = voltageBatteryMax * 0.9670;
+        batteryRechargeVoltage = voltageBatteryMax * 0.9240;
+        batteryAbsExitCurrent = max(0.5f, currentCharging * 0.10f);
+        batteryFloatEnabled = true;
+        batteryAbsorptionTimeoutMs = 7200000;
+    }
+
+    void updateStageTargets()
+    {
+        if (chargingStage == STAGE_BULK)
+        {
+            chargeVoltageTarget = batteryAbsorptionVoltage;
+            chargeCurrentTarget = currentCharging;
+        }
+        else if (chargingStage == STAGE_ABSORPTION)
+        {
+            chargeVoltageTarget = batteryAbsorptionVoltage;
+            chargeCurrentTarget = max(batteryAbsExitCurrent, currentCharging * 0.50f);
+        }
+        else
+        {
+            chargeVoltageTarget = batteryFloatEnabled ? batteryFloatVoltage : batteryAbsorptionVoltage;
+            chargeCurrentTarget = max(batteryAbsExitCurrent, currentCharging * 0.20f);
+        }
+    }
+
+    void updateChargingStageTransitions()
+    {
+        unsigned long stageElapsed = millis() - chargingStageStartMillis;
+
+        if (chargingStage == STAGE_BULK)
+        {
+            if (voltageOutput >= batteryAbsorptionVoltage - 0.15f)
+            {
+                setChargingStage(STAGE_ABSORPTION);
+            }
+        }
+        else if (chargingStage == STAGE_ABSORPTION)
+        {
+            bool currentTapered = (currentOutput <= batteryAbsExitCurrent) && (voltageOutput >= batteryAbsorptionVoltage - 0.10f);
+            bool absorbTimedOut = stageElapsed >= batteryAbsorptionTimeoutMs;
+            if (currentTapered || absorbTimedOut)
+            {
+                setChargingStage(STAGE_FLOAT);
+            }
+        }
+        else
+        {
+            if (voltageOutput <= batteryRechargeVoltage)
+            {
+                setChargingStage(STAGE_BULK);
+            }
+        }
+
+        updateStageTargets();
+    }
 } // namespace
 
 void buck_Enable()
