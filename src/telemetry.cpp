@@ -13,6 +13,7 @@
 #endif
 
 #include "telemetry.h"
+#include "charging.h"
 
 void Onboard_Telemetry()
 {
@@ -48,6 +49,10 @@ void Onboard_Telemetry()
             Serial.print(MPPT_Mode);
             Serial.print(" CM:");
             Serial.print(output_Mode);
+            Serial.print(" BST:");
+            Serial.print(getChargingStageName());
+            Serial.print(" BPRE:");
+            Serial.print(getBatteryPresetName());
 
             Serial.print(" ");
             Serial.print(" BYP:");
@@ -118,6 +123,8 @@ void Onboard_Telemetry()
             Serial.print(buckEnable);
             Serial.print(" FAN:");
             Serial.print(fanStatus);
+            Serial.print(" ST:");
+            Serial.print(getChargingStageName());
             Serial.print(" SOC:");
             Serial.print(batteryPercent);
             Serial.print("%");

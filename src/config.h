@@ -71,6 +71,7 @@ extern float voltageBatteryMax;
 extern float voltageBatteryMin;
 extern float currentCharging;
 extern float electricalPrice;
+extern int batteryPreset;
 
 //===== CALIBRATION PARAMETERS =====
 extern bool ADS1015_Mode;
@@ -168,6 +169,12 @@ extern float outputDeviation;
 extern float buckEfficiency;
 extern float floatTemp;
 extern float vOutSystemMin;
+extern float chargeVoltageTarget;
+extern float chargeCurrentTarget;
+extern float batteryAbsorptionVoltage;
+extern float batteryFloatVoltage;
+extern float batteryRechargeVoltage;
+extern float batteryAbsExitCurrent;
 
 //===== SYSTEM PARAMETERS (TIMING) =====
 extern unsigned long currentErrorMillis;
@@ -186,6 +193,12 @@ extern unsigned long timeOn;
 extern unsigned long loopTimeStart;
 extern unsigned long loopTimeEnd;
 extern unsigned long secondsElapsed;
+extern unsigned long chargingStageStartMillis;
+
+//===== CHARGING STAGE PARAMETERS =====
+extern int chargingStage;
+extern bool batteryFloatEnabled;
+extern unsigned long batteryAbsorptionTimeoutMs;
 
 //===== FIRMWARE INFO =====
 extern String firmwareInfo;

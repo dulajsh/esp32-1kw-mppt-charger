@@ -1,5 +1,6 @@
 #include "lcd.h"
 #include "system.h"
+#include "charging.h"
 
 extern int buttonRightCommand;
 extern int buttonLeftCommand;
@@ -326,7 +327,7 @@ void LCD_Menu()
 {
     int
         menuPages = 4,
-        subMenuPages = 14,
+        subMenuPages = 15,
         longPressTime = 3000,
         longPressInterval = 500,
         shortPressInterval = 100;
@@ -1577,6 +1578,70 @@ void LCD_Menu()
                     {
                     }
                     setMenuPage = 0;
+                }
+            }
+        }
+
+        else if (subMenuPage == 15)
+        {
+            lcd.setCursor(0, 0);
+            lcd.print("BATTERY PRESET  ");
+            if (setMenuPage == 1)
+            {
+                lcd.setCursor(0, 1);
+                lcd.print(" >");
+            }
+            else
+            {
+                lcd.setCursor(0, 1);
+                lcd.print("= ");
+            }
+            lcd.print(getBatteryPresetName());
+            lcd.print("          ");
+
+            if (setMenuPage == 0)
+            {
+                intTemp = batteryPreset;
+            }
+            else
+            {
+                if (digitalRead(buttonRight) == 1)
+                {
+                    while (digitalRead(buttonRight) == 1)
+                    {
+                    }
+                    batteryPreset++;
+                    batteryPreset = constrain(batteryPreset, 0, 5);
+                    applyBatteryPreset(true);
+                }
+                else if (digitalRead(buttonLeft) == 1)
+                {
+                    while (digitalRead(buttonLeft) == 1)
+                    {
+                    }
+                    batteryPreset--;
+                    batteryPreset = constrain(batteryPreset, 0, 5);
+                    applyBatteryPreset(true);
+                }
+
+                if (digitalRead(buttonBack) == 1)
+                {
+                    while (digitalRead(buttonBack) == 1)
+                    {
+                    }
+                    batteryPreset = intTemp;
+                    applyBatteryPreset(true);
+                    cancelledMessageLCD();
+                    setMenuPage = 0;
+                }
+                if (digitalRead(buttonSelect) == 1)
+                {
+                    while (digitalRead(buttonSelect) == 1)
+                    {
+                    }
+                    saveSettings();
+                    setMenuPage = 0;
+                    savedMessageLCD();
                 }
             }
         }

@@ -80,6 +80,7 @@ void setup()
     EEPROM.begin(512);
     Serial.println("> FLASH MEMORY: STORAGE INITIALIZED");
     initializeFlashAutoload();
+    applyBatteryPreset(true);
     Serial.println("> FLASH MEMORY: SAVED DATA LOADED");
 
     if (enableLCD == 1)
