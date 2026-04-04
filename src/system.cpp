@@ -82,6 +82,7 @@ void factoryReset()
     EEPROM.write(15, 232);
     EEPROM.write(16, 3);
     EEPROM.write(17, 232);
+    EEPROM.write(18, 0);
     EEPROM.commit();
     loadSettings();
 }
@@ -113,6 +114,12 @@ void loadSettings()
         inVoltageOffsetRaw = 1000;
     }
     inVoltageOffset = (inVoltageOffsetRaw - 1000) * 0.01;
+
+    batteryPreset = EEPROM.read(18);
+    if (batteryPreset < 0 || batteryPreset > 5)
+    {
+        batteryPreset = 0;
+    }
 }
 
 void saveSettings()
@@ -147,6 +154,7 @@ void saveSettings()
     inVoltageOffsetRaw = constrain(inVoltageOffsetRaw, 0, 2000);
     EEPROM.write(16, (inVoltageOffsetRaw >> 8) & 0xFF);
     EEPROM.write(17, inVoltageOffsetRaw & 0xFF);
+    EEPROM.write(18, batteryPreset);
     EEPROM.commit();
 }
 

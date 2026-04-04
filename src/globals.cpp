@@ -43,6 +43,7 @@ float voltageBatteryMax = 27.3000;
 float voltageBatteryMin = 22.4000;
 float currentCharging = 30.0000;
 float electricalPrice = 9.5000;
+int batteryPreset = 0;
 
 //===== CALIBRATION PARAMETERS =====
 bool ADS1015_Mode = 1;
@@ -141,6 +142,12 @@ float outputDeviation = 0.0000;
 float buckEfficiency = 0.0000;
 float floatTemp = 0.0000;
 float vOutSystemMin = 0.0000;
+float chargeVoltageTarget = 27.3000;
+float chargeCurrentTarget = 30.0000;
+float batteryAbsorptionVoltage = 27.3000;
+float batteryFloatVoltage = 26.4000;
+float batteryRechargeVoltage = 25.2000;
+float batteryAbsExitCurrent = 3.0000;
 
 //===== SYSTEM PARAMETERS (TIMING) =====
 unsigned long currentErrorMillis = 0;
@@ -159,6 +166,12 @@ unsigned long timeOn = 0;
 unsigned long loopTimeStart = 0;
 unsigned long loopTimeEnd = 0;
 unsigned long secondsElapsed = 0;
+unsigned long chargingStageStartMillis = 0;
+
+//===== CHARGING STAGE PARAMETERS =====
+int chargingStage = 0;
+bool batteryFloatEnabled = 1;
+unsigned long batteryAbsorptionTimeoutMs = 7200000;
 
 //===== FIRMWARE INFO =====
 String firmwareInfo = "V1.10   ";
