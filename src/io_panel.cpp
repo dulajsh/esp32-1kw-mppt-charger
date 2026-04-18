@@ -383,6 +383,26 @@ namespace
     {
         char line[24];
 
+        auto formatWiFiLine = [&](char *buffer, size_t size)
+        {
+            if (!enableWiFi)
+            {
+                snprintf(buffer, size, "WiFi: OFF");
+                return;
+            }
+
+            if (WiFi.status() != WL_CONNECTED)
+            {
+                snprintf(buffer, size, "WiFi: DISCONNECTED");
+                return;
+            }
+
+            const long rssi = WiFi.RSSI();
+            int quality = 2 * (rssi + 100);
+            quality = constrain(quality, 0, 100);
+            snprintf(buffer, size, "WiFi: %lddBm %3d%%", rssi, quality);
+        };
+
         oled.clearBuffer();
         oled.setFont(u8g2_font_6x12_tf);
         oled.drawStr(0, 10, "MPPT STATUS");
@@ -407,7 +427,7 @@ namespace
             oled.drawStr(0, 38, line);
             snprintf(line, sizeof(line), "Days: %8.2f", daysRunning);
             oled.drawStr(0, 51, line);
-            snprintf(line, sizeof(line), "Mode: %s", MPPT_Mode ? "MPPT+CCCV" : "CCCV");
+            formatWiFiLine(line, sizeof(line));
             oled.drawStr(0, 64, line);
         }
 

@@ -15,6 +15,54 @@
 #include "telemetry.h"
 #include "charging.h"
 
+#if HAS_BLYNK
+namespace
+{
+    const unsigned long wifiReconnectIntervalMs = 10000;
+    unsigned long lastWifiReconnectAttemptMs = 0;
+
+    bool isWiFiReady()
+    {
+        return WiFi.status() == WL_CONNECTED;
+    }
+
+    void updateWiFiStatusFlag()
+    {
+        WIFI = isWiFiReady();
+    }
+
+    void ensureBlynkConnected()
+    {
+        if (!enableWiFi)
+        {
+            WIFI = 0;
+            return;
+        }
+
+        updateWiFiStatusFlag();
+        if (!isWiFiReady())
+        {
+            Blynk.disconnect();
+            return;
+        }
+
+        if (Blynk.connected())
+        {
+            return;
+        }
+
+        const unsigned long now = millis();
+        if (now - lastWifiReconnectAttemptMs < wifiReconnectIntervalMs)
+        {
+            return;
+        }
+
+        lastWifiReconnectAttemptMs = now;
+        Blynk.connect(1000);
+    }
+}
+#endif
+
 namespace
 {
     bool isSerialListenerActive()
@@ -191,12 +239,18 @@ void setupWiFi()
 {
     if (enableWiFi == 1)
     {
-#if HAS_BLYNK
-        Blynk.begin(auth, ssid, pass);
-        WIFI = 1;
-#else
+        WiFi.mode(WIFI_STA);
+        WiFi.setAutoReconnect(true);
+        WiFi.begin(ssid, pass);
         WIFI = 0;
+
+#if HAS_BLYNK
+        Blynk.config(auth);
 #endif
+    }
+    else
+    {
+        WIFI = 0;
     }
 }
 
@@ -204,7 +258,16 @@ void Wireless_Telemetry()
 {
     if (enableWiFi == 1)
     {
+        WIFI = (WiFi.status() == WL_CONNECTED);
+
 #if HAS_BLYNK
+        ensureBlynkConnected();
+
+        if (!Blynk.connected())
+        {
+            return;
+        }
+
         int LED1, LED2, LED3, LED4;
         if (buckEnable == 1)
         {
@@ -240,24 +303,24 @@ void Wireless_Telemetry()
         }
 
         Blynk.run();
-        Blynk.virtualWrite(1, powerInput);
-        Blynk.virtualWrite(2, batteryPercent);
-        Blynk.virtualWrite(3, voltageInput);
-        Blynk.virtualWrite(4, currentInput);
-        Blynk.virtualWrite(5, voltageOutput);
-        Blynk.virtualWrite(6, currentOutput);
-        Blynk.virtualWrite(7, temperature);
-        Blynk.virtualWrite(8, Wh / 1000);
-        Blynk.virtualWrite(9, energySavings);
-        Blynk.virtualWrite(10, LED1);
-        Blynk.virtualWrite(11, LED2);
-        Blynk.virtualWrite(12, LED3);
-        Blynk.virtualWrite(13, LED4);
+        Blynk.virtualWrite(V1, powerInput);
+        Blynk.virtualWrite(V2, batteryPercent);
+        Blynk.virtualWrite(V3, voltageInput);
+        Blynk.virtualWrite(V4, currentInput);
+        Blynk.virtualWrite(V5, voltageOutput);
+        Blynk.virtualWrite(V6, currentOutput);
+        Blynk.virtualWrite(V7, temperature);
+        Blynk.virtualWrite(V8, Wh / 1000);
+        Blynk.virtualWrite(V9, energySavings);
+        Blynk.virtualWrite(V10, LED1);
+        Blynk.virtualWrite(V11, LED2);
+        Blynk.virtualWrite(V12, LED3);
+        Blynk.virtualWrite(V13, LED4);
 
-        Blynk.virtualWrite(14, voltageBatteryMin);
-        Blynk.virtualWrite(15, voltageBatteryMax);
-        Blynk.virtualWrite(16, currentCharging);
-        Blynk.virtualWrite(17, electricalPrice);
+        Blynk.virtualWrite(V14, voltageBatteryMin);
+        Blynk.virtualWrite(V15, voltageBatteryMax);
+        Blynk.virtualWrite(V16, currentCharging);
+        Blynk.virtualWrite(V17, electricalPrice);
 #endif
     }
 

@@ -6,9 +6,9 @@ TaskHandle_t Core2;
 Adafruit_ADS1015 ads;
 
 //===== WiFi CREDENTIALS =====
-char auth[] = "InputBlynkAuthenticationToken";
-char ssid[] = "InputWiFiSSID";
-char pass[] = "InputWiFiPassword";
+char auth[] = "geryVCW7mfVhKnqazrBPQmowDg1p2TA-";
+char ssid[] = "SLT_FIBER_HDSDH";
+char pass[] = "q8w7xXx7G%vT!s";
 
 //===== USER PARAMETERS =====
 bool MPPT_Mode = 1;
