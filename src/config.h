@@ -37,7 +37,11 @@ extern Adafruit_ADS1015 ads;
 //===== I2C BUS DEFINITIONS =====
 #define I2C_SDA_PIN 21
 #define I2C_SCL_PIN 22
-#define I2C_FREQUENCY 100000
+#define I2C_FREQUENCY 400000
+
+// 1 = allow serial telemetry on UART bridge boards (no reliable monitor-open detect)
+// 0 = disable UART telemetry by default to avoid loop-time overhead when USB monitor is closed
+#define ALLOW_UART_SERIAL_TELEMETRY 0
 
 //===== WiFi CREDENTIALS =====
 extern char auth[];

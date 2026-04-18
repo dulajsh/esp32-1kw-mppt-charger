@@ -44,6 +44,8 @@ namespace
         uint8_t decimals;
     };
 
+    bool oledSleepEnabled = true;
+
     MenuItem menuItems[] = {
         {"MPPT Algo", VALUE_BOOL, &MPPT_Mode, 0, 1, 1, 0},
         {"Output Mode", VALUE_BOOL, &output_Mode, 0, 1, 1, 0},
@@ -54,7 +56,7 @@ namespace
         {"Fan Start C", VALUE_INT, &temperatureFan, 20, 100, 1, 0},
         {"Temp Max C", VALUE_INT, &temperatureMax, 40, 120, 1, 0},
         {"WiFi Enable", VALUE_BOOL, &enableWiFi, 0, 1, 1, 0},
-        {"Backlight", VALUE_INT, &backlightSleepMode, 0, 9, 1, 0},
+        {"OLED Sleep", VALUE_BOOL, &oledSleepEnabled, 0, 1, 1, 0},
         {"Battery Preset", VALUE_INT, &batteryPreset, 0, 5, 1, 0},
     };
 
@@ -75,12 +77,31 @@ namespace
     portMUX_TYPE encoderMux = portMUX_INITIALIZER_UNLOCKED;
     float editSnapshot = 0.0f;
 
-    const unsigned long redrawIntervalMs = 120;
+    const unsigned long statusRedrawIntervalMs = 400;
+    const unsigned long settingsRedrawIntervalMs = 120;
     const unsigned long debounceMs = 25;
     const unsigned long longPressMs = 1200;
     const int8_t encoderQuarterStepsPerMove = 2;
+    const unsigned long oledSleepTimeoutMs = 20000;
+    bool oledSleeping = false;
+    unsigned long lastUserActivityMs = 0;
     unsigned long lastEditTurnMs = 0;
     unsigned long lastDrawMs = 0;
+
+    void setOledSleepState(bool sleep)
+    {
+        if (oledSleeping == sleep)
+        {
+            return;
+        }
+
+        oledSleeping = sleep;
+        oled.setPowerSave(oledSleeping ? 1 : 0);
+        if (!oledSleeping)
+        {
+            refreshRequested = true;
+        }
+    }
 
     inline uint8_t readEncoderAB()
     {
@@ -379,33 +400,68 @@ namespace
         snprintf(buffer, size, "%.*f", item.decimals, v);
     }
 
+    void drawWiFiIcon(int x, int y)
+    {
+        // Signal bars are drawn bottom-aligned from left to right.
+        int bars = 0;
+        bool connected = false;
+
+        if (enableWiFi && WiFi.status() == WL_CONNECTED)
+        {
+            connected = true;
+            const long rssi = WiFi.RSSI();
+            int quality = 2 * (rssi + 100);
+            quality = constrain(quality, 0, 100);
+
+            if (quality >= 75)
+            {
+                bars = 4;
+            }
+            else if (quality >= 50)
+            {
+                bars = 3;
+            }
+            else if (quality >= 25)
+            {
+                bars = 2;
+            }
+            else if (quality > 0)
+            {
+                bars = 1;
+            }
+        }
+
+        const int baseY = y;
+        const int barX[4] = {x, x + 3, x + 6, x + 9};
+        const int barH[4] = {2, 4, 6, 8};
+        for (int i = 0; i < 4; i++)
+        {
+            if (i < bars)
+            {
+                oled.drawBox(barX[i], baseY - barH[i], 2, barH[i]);
+            }
+            else
+            {
+                oled.drawFrame(barX[i], baseY - barH[i], 2, barH[i]);
+            }
+        }
+
+        if (!connected)
+        {
+            // Slash the icon when Wi-Fi is disabled or disconnected.
+            oled.drawLine(x - 1, baseY - 8, x + 11, baseY);
+        }
+    }
+
     void drawStatusPage()
     {
         char line[24];
 
-        auto formatWiFiLine = [&](char *buffer, size_t size)
-        {
-            if (!enableWiFi)
-            {
-                snprintf(buffer, size, "WiFi: OFF");
-                return;
-            }
-
-            if (WiFi.status() != WL_CONNECTED)
-            {
-                snprintf(buffer, size, "WiFi: DISCONNECTED");
-                return;
-            }
-
-            const long rssi = WiFi.RSSI();
-            int quality = 2 * (rssi + 100);
-            quality = constrain(quality, 0, 100);
-            snprintf(buffer, size, "WiFi: %lddBm %3d%%", rssi, quality);
-        };
-
         oled.clearBuffer();
         oled.setFont(u8g2_font_6x12_tf);
-        oled.drawStr(0, 10, "MPPT STATUS");
+        snprintf(line, sizeof(line), "MPPT STATUS %d/4", statusPage + 1);
+        oled.drawStr(0, 10, line);
+        drawWiFiIcon(114, 10);
         oled.drawLine(0, 12, 127, 12);
 
         if (statusPage == 0)
@@ -419,7 +475,7 @@ namespace
             snprintf(line, sizeof(line), "Tmp : %2dC   Stage %d", temperature, chargingStage);
             oled.drawStr(0, 64, line);
         }
-        else
+        else if (statusPage == 1)
         {
             snprintf(line, sizeof(line), "Wh  : %8.2f", Wh);
             oled.drawStr(0, 25, line);
@@ -427,7 +483,29 @@ namespace
             oled.drawStr(0, 38, line);
             snprintf(line, sizeof(line), "Days: %8.2f", daysRunning);
             oled.drawStr(0, 51, line);
-            formatWiFiLine(line, sizeof(line));
+            snprintf(line, sizeof(line), "Mode: %s", MPPT_Mode ? "MPPT+CCCV" : "CCCV");
+            oled.drawStr(0, 64, line);
+        }
+        else if (statusPage == 2)
+        {
+            snprintf(line, sizeof(line), "ERR:%d REC:%d BNC:%d", ERR, REC, BNC);
+            oled.drawStr(0, 25, line);
+            snprintf(line, sizeof(line), "IUV:%d IOC:%d OOV:%d", IUV, IOC, OOV);
+            oled.drawStr(0, 38, line);
+            snprintf(line, sizeof(line), "OOC:%d OTE:%d FLV:%d", OOC, OTE, FLV);
+            oled.drawStr(0, 51, line);
+            snprintf(line, sizeof(line), "ADS:%d LCD:%d OLE:%d", ADS_Connected, LCD_Connected, OLED_Connected);
+            oled.drawStr(0, 64, line);
+        }
+        else
+        {
+            snprintf(line, sizeof(line), "PWM:%4d PP:%4d EN:%d", PWM, PPWM, buckEnable);
+            oled.drawStr(0, 25, line);
+            snprintf(line, sizeof(line), "BYP:%d FAN:%d SRC:%d", bypassEnable, fanStatus, inputSource);
+            oled.drawStr(0, 38, line);
+            snprintf(line, sizeof(line), "SOC:%3d%% Temp:%2dC", batteryPercent, temperature);
+            oled.drawStr(0, 51, line);
+            snprintf(line, sizeof(line), "Loop:%6.2fms", loopTime);
             oled.drawStr(0, 64, line);
         }
 
@@ -441,6 +519,7 @@ namespace
         oled.clearBuffer();
         oled.setFont(u8g2_font_6x12_tf);
         oled.drawStr(0, 10, editValue ? "SETTINGS [EDIT]" : "SETTINGS [NAV]");
+        drawWiFiIcon(114, 10);
         oled.drawLine(0, 12, 127, 12);
         oled.drawVLine(82, 14, 50);
 
@@ -557,13 +636,19 @@ void IO_Panel_Init()
     attachInterrupt(digitalPinToInterrupt(encoderPinA), onEncoderEdge, CHANGE);
     attachInterrupt(digitalPinToInterrupt(encoderPinB), onEncoderEdge, CHANGE);
 
+    oled.setBusClock(400000);
     oled.begin();
+    oled.setPowerSave(0);
     oled.clearBuffer();
     oled.setFont(u8g2_font_6x12_tf);
     oled.drawStr(0, 14, "MPPT IO PANEL READY");
     oled.drawStr(0, 28, "Hold encoder to open");
     oled.drawStr(0, 42, "settings table menu");
     oled.sendBuffer();
+
+    oledSleepEnabled = true;
+    oledSleeping = false;
+    lastUserActivityMs = millis();
 }
 
 void IO_Panel_Update()
@@ -578,6 +663,22 @@ void IO_Panel_Update()
 
     updateEncoder();
     updateButton(encoderSw, encoderPinSW, swShort, swLong);
+
+    const unsigned long now = millis();
+    const bool userActivity = (encoderDelta != 0) || swShort || swLong || encoderSw.stablePressed;
+    if (!oledSleepEnabled)
+    {
+        setOledSleepState(false);
+    }
+    else if (settingsOpen || userActivity)
+    {
+        lastUserActivityMs = now;
+        setOledSleepState(false);
+    }
+    else if (now - lastUserActivityMs >= oledSleepTimeoutMs)
+    {
+        setOledSleepState(true);
+    }
 
     if (swLong)
     {
@@ -610,13 +711,13 @@ void IO_Panel_Update()
         if (encoderDelta != 0)
         {
             statusPage += (encoderDelta > 0) ? 1 : -1;
-            if (statusPage > 1)
+            if (statusPage > 3)
             {
                 statusPage = 0;
             }
             if (statusPage < 0)
             {
-                statusPage = 1;
+                statusPage = 3;
             }
             encoderDelta = 0;
             refreshRequested = true;
@@ -668,7 +769,7 @@ void IO_Panel_Update()
         // Single-switch mode: no AUX button. Use long press to cancel edit or close menu.
     }
 
-    const unsigned long now = millis();
+    const unsigned long redrawIntervalMs = settingsOpen ? settingsRedrawIntervalMs : statusRedrawIntervalMs;
     if (!refreshRequested && (now - lastDrawMs < redrawIntervalMs))
     {
         return;
@@ -676,6 +777,11 @@ void IO_Panel_Update()
 
     lastDrawMs = now;
     refreshRequested = false;
+
+    if (oledSleeping)
+    {
+        return;
+    }
 
     if (settingsOpen)
     {

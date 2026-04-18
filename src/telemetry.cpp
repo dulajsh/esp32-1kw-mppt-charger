@@ -19,7 +19,9 @@
 namespace
 {
     const unsigned long wifiReconnectIntervalMs = 10000;
+    const unsigned long blynkPublishIntervalMs = 200;
     unsigned long lastWifiReconnectAttemptMs = 0;
+    unsigned long lastBlynkPublishMs = 0;
 
     bool isWiFiReady()
     {
@@ -71,9 +73,13 @@ namespace
         // Native USB CDC can reliably report terminal open state with DTR.
         return Serial && Serial.dtr();
 #else
-        // UART bridge boards cannot detect monitor-open reliably; this still
-        // suppresses telemetry when serial is not initialized/connected.
+        // UART bridge boards cannot detect monitor-open reliably.
+        // Keep telemetry off by default unless explicitly allowed.
+#if ALLOW_UART_SERIAL_TELEMETRY
         return (bool)Serial;
+#else
+        return false;
+#endif
 #endif
     }
 }
@@ -85,8 +91,10 @@ void Onboard_Telemetry()
         return;
     }
 
+    const unsigned long serialIntervalMs = (millisSerialInterval < 20) ? 20 : (unsigned long)millisSerialInterval;
+
     currentSerialMillis = millis();
-    if (currentSerialMillis - prevSerialMillis >= millisSerialInterval)
+    if (currentSerialMillis - prevSerialMillis >= serialIntervalMs)
     {
         prevSerialMillis = currentSerialMillis;
 
@@ -268,6 +276,15 @@ void Wireless_Telemetry()
             return;
         }
 
+        Blynk.run();
+
+        const unsigned long now = millis();
+        if (now - lastBlynkPublishMs < blynkPublishIntervalMs)
+        {
+            return;
+        }
+        lastBlynkPublishMs = now;
+
         int LED1, LED2, LED3, LED4;
         if (buckEnable == 1)
         {
@@ -302,7 +319,6 @@ void Wireless_Telemetry()
             LED4 = 0;
         }
 
-        Blynk.run();
         Blynk.virtualWrite(V1, powerInput);
         Blynk.virtualWrite(V2, batteryPercent);
         Blynk.virtualWrite(V3, voltageInput);

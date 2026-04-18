@@ -30,7 +30,7 @@ int telemCounterReset = 0;
 int errorTimeLimit = 1000;
 int errorCountLimit = 5;
 int millisRoutineInterval = 250;
-int millisSerialInterval = 1;
+int millisSerialInterval = 100;
 int millisLCDInterval = 2000;
 int backlightSleepMode = 0;
 int baudRate = 500000;
@@ -44,9 +44,9 @@ int batteryPreset = 0;
 //===== CALIBRATION PARAMETERS =====
 bool ADS1015_Mode = 1;
 int ADC_GainSelect = 2;
-int avgCountVS = 3;
-int avgCountCS = 4;
-int avgCountTS = 500;
+int avgCountVS = 2;
+int avgCountCS = 2;
+int avgCountTS = 300;
 
 float inVoltageDivRatio = 40.2156;
 float inVoltageOffset = 0.000;

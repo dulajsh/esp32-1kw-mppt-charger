@@ -21,6 +21,7 @@ void coreTwo(void *pvParameters)
     while (1)
     {
         Wireless_Telemetry();
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
 }
 
