@@ -160,10 +160,51 @@ Credentials currently live in `src/globals.cpp`:
 - `pass`
 
 Behavior:
-- If `BlynkSimpleEsp32.h` is present, wireless telemetry is enabled.
-- If Blynk headers are not present, firmware still compiles and runs without Blynk.
+- Wi-Fi connection is attempted when `enableWiFi = 1`, even if Blynk is not available.
+- If `BlynkSimpleEsp32.h` is present, cloud telemetry is enabled and auto-reconnect is used.
+- If Blynk headers are not present, firmware still compiles and runs without Blynk cloud telemetry.
 - Onboard serial telemetry output is gated to active serial listener conditions (board-dependent).
 - On USB-UART bridge boards, monitor-open detection may be limited by hardware/driver behavior.
+
+### Blynk Requirements
+
+- `platformio.ini` includes `blynkkk/Blynk@^1.3.2` in `lib_deps`.
+- `auth` in `src/globals.cpp` must match your Blynk template token.
+- ESP32 must connect to a 2.4 GHz Wi-Fi network.
+
+### Blynk Dashboard Datastream Mapping
+
+Create datastreams/widgets on the following virtual pins:
+
+| Pin | Value | Suggested Widget |
+|---|---|---|
+| V1 | `powerInput` | Value Display / Gauge |
+| V2 | `batteryPercent` | Gauge |
+| V3 | `voltageInput` | Gauge |
+| V4 | `currentInput` | Gauge |
+| V5 | `voltageOutput` | Gauge |
+| V6 | `currentOutput` | Gauge |
+| V7 | `temperature` | Value Display / Gauge |
+| V8 | `Wh / 1000` (kWh) | Chart / Value Display |
+| V9 | `energySavings` | Value Display |
+| V10 | Buck state LED | LED |
+| V11 | Battery-full LED | LED |
+| V12 | Low-battery LED | LED |
+| V13 | Input-OK LED | LED |
+| V14 | `voltageBatteryMin` | Value Display |
+| V15 | `voltageBatteryMax` | Value Display |
+| V16 | `currentCharging` | Value Display |
+| V17 | `electricalPrice` | Value Display |
+
+Current firmware behavior is telemetry-out only for Blynk (no `BLYNK_WRITE` control handlers yet).
+
+### Wi-Fi/Blynk Troubleshooting
+
+- Verify SSID/password in `src/globals.cpp` are exact (case-sensitive).
+- Confirm router broadcasts 2.4 GHz and has DHCP enabled.
+- Check `enableWiFi` is set to `1`.
+- Confirm Blynk token (`auth`) belongs to the same template where datastreams are created.
+- If upload fails with port busy, close serial monitor before flashing.
 
 ## Validation Checklist (Recommended)
 
