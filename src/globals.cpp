@@ -14,12 +14,10 @@ char pass[] = "InputWiFiPassword";
 bool MPPT_Mode = 1;
 bool output_Mode = 1;
 bool disableFlashAutoLoad = 0;
-bool enablePPWM = 1;
 bool enableWiFi = 1;
 bool enableFan = 1;
 bool enableBluetooth = 1;
 bool enableLCD = 1;
-bool enableLCDBacklight = 1;
 bool overrideFan = 0;
 bool enableDynamicCooling = 0;
 
@@ -34,8 +32,6 @@ int errorCountLimit = 5;
 int millisRoutineInterval = 250;
 int millisSerialInterval = 1;
 int millisLCDInterval = 2000;
-int millisWiFiInterval = 2000;
-int millisLCDBackLInterval = 2000;
 int backlightSleepMode = 0;
 int baudRate = 500000;
 

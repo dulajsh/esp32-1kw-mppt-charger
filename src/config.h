@@ -48,12 +48,10 @@ extern char pass[];
 extern bool MPPT_Mode;
 extern bool output_Mode;
 extern bool disableFlashAutoLoad;
-extern bool enablePPWM;
 extern bool enableWiFi;
 extern bool enableFan;
 extern bool enableBluetooth;
 extern bool enableLCD;
-extern bool enableLCDBacklight;
 extern bool overrideFan;
 extern bool enableDynamicCooling;
 
@@ -68,8 +66,6 @@ extern int errorCountLimit;
 extern int millisRoutineInterval;
 extern int millisSerialInterval;
 extern int millisLCDInterval;
-extern int millisWiFiInterval;
-extern int millisLCDBackLInterval;
 extern int backlightSleepMode;
 extern int baudRate;
 
