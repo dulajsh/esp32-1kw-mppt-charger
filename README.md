@@ -14,7 +14,7 @@ This fork focuses on cleaner structure, practical protection logic, easier tunin
 | MCU | ESP32 (PlatformIO target: featheresp32) |
 | Control | PWM buck control with MPPT mode + non-MPPT regulated mode |
 | Sensing | ADS1015 for voltage/current + NTC temperature input |
-| UI | 16x2 I2C LCD menu + hardware buttons |
+| UI | Auto-detected UI: 0.96in I2C OLED + rotary encoder (preferred) or 16x2 I2C LCD + buttons |
 | Telemetry | Serial telemetry + optional Blynk cloud telemetry |
 | Persistence | EEPROM-based settings load/save |
 | Safety | Overcurrent, overvoltage, undervoltage, overtemperature, battery/source checks |
@@ -65,15 +65,20 @@ pio device monitor -b 500000
 - Backflow MOSFET control to reduce reverse flow risk
 
 ### User Experience
-- Local LCD menu for live status and settings
+- Auto UI selection on boot:
+	- OLED mode (SSD1306 128x64): rotary-encoder status and settings menu
+	- LCD mode (16x2): legacy button-driven menu
+- In OLED settings mode, converter switching is paused and output path is forced off for safe editing
+- Settings are applied and saved when exiting the settings menu
 - Persistent user settings in EEPROM
 - Runtime metrics: power, Wh/kWh/MWh, SOC estimate, loop time
 - Optional Blynk integration when library is present
+- Adaptive encoder editing: fine increments at slow rotation and accelerated increments at high rotation speed
 
 ## Firmware Architecture
 
 Dual-core split:
-- Core 1 loop: sensors, protection, charging algorithm, onboard telemetry, LCD menu
+- Core 1 loop: sensors, protection, charging algorithm, onboard telemetry, OLED/LCD UI service
 - Core 0 task: Wi-Fi setup and wireless telemetry service
 
 ## Project Layout
@@ -111,12 +116,22 @@ Dual-core split:
 | buttonRight | 17 |
 | buttonBack | 19 |
 | buttonSelect | 23 |
+| encoderPinA | 17 |
+| encoderPinB | 18 |
+| encoderPinSW | 19 |
+
+Notes:
+- OLED mode uses encoder pins. LCD mode uses legacy button pins.
+- Encoder polarity/pull mode is controlled by `encoderCommonPositive` in `src/config.h`.
 
 ## Configuration Guide
 
 Main tuning location:
 - `src/globals.cpp` (default values)
 - `src/config.h` (extern declarations and shared parameters)
+
+UI behavior location:
+- `src/io_panel.cpp` (OLED + rotary encoder menu logic)
 
 Recommended parameters to verify before real charging tests:
 
@@ -130,6 +145,13 @@ Recommended parameters to verify before real charging tests:
 | Current calibration | `currentMidPoint`, `currentSensV` |
 | Thermal calibration | `ntcResistance` |
 
+Encoder/UI parameters to verify:
+
+| Group | Parameters |
+|---|---|
+| Encoder wiring mode | `encoderCommonPositive` |
+| Serial telemetry mode | `serialTelemMode` |
+
 ## Telemetry Setup
 
 Credentials currently live in `src/globals.cpp`:
@@ -140,6 +162,8 @@ Credentials currently live in `src/globals.cpp`:
 Behavior:
 - If `BlynkSimpleEsp32.h` is present, wireless telemetry is enabled.
 - If Blynk headers are not present, firmware still compiles and runs without Blynk.
+- Onboard serial telemetry output is gated to active serial listener conditions (board-dependent).
+- On USB-UART bridge boards, monitor-open detection may be limited by hardware/driver behavior.
 
 ## Validation Checklist (Recommended)
 
