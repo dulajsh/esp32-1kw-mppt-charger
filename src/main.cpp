@@ -6,6 +6,7 @@
 #include "system.h"
 #include "telemetry.h"
 #include "lcd.h"
+#include "io_panel.h"
 
 static bool isI2CDevicePresent(uint8_t address)
 {
@@ -50,6 +51,15 @@ void setup()
     Serial.printf("> I2C initialized (SDA=%d, SCL=%d, FREQ=%d)\n", I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQUENCY);
 
     LCD_Connected = isI2CDevicePresent(0x27) || isI2CDevicePresent(0x3F);
+    OLED_Connected = isI2CDevicePresent(0x3C) || isI2CDevicePresent(0x3D);
+
+    if (OLED_Connected)
+    {
+        enableLCD = 0;
+        Serial.println("> OLED detected on I2C (0.96in 128x64)");
+        IO_Panel_Init();
+    }
+
     if (LCD_Connected)
     {
         lcd.init();
@@ -106,5 +116,13 @@ void loop()
     System_Processes();
     Charging_Algorithm();
     Onboard_Telemetry();
-    LCD_Menu();
+
+    if (OLED_Connected)
+    {
+        IO_Panel_Update();
+    }
+    else
+    {
+        LCD_Menu();
+    }
 }

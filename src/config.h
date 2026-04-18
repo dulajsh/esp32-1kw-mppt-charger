@@ -27,6 +27,12 @@ extern Adafruit_ADS1015 ads;
 #define buttonRight 17
 #define buttonBack 19
 #define buttonSelect 23
+#define encoderPinA 17
+#define encoderPinB 18
+#define encoderPinSW 19
+// 1 = encoder common wired to +3.3V (use pulldown, active HIGH)
+// 0 = encoder common wired to GND (use pullup, active LOW)
+#define encoderCommonPositive 1
 
 //===== I2C BUS DEFINITIONS =====
 #define I2C_SDA_PIN 21
@@ -119,6 +125,7 @@ extern bool OOC;
 extern bool OTE;
 extern bool ADS_Connected;
 extern bool LCD_Connected;
+extern bool OLED_Connected;
 
 //===== SYSTEM PARAMETERS (INTEGERS) =====
 extern int inputSource;

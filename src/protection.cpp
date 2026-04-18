@@ -2,6 +2,13 @@
 
 void backflowControl()
 {
+    if (chargingPause == 1)
+    {
+        bypassEnable = 0;
+        digitalWrite(backflow_MOSFET, LOW);
+        return;
+    }
+
     if (output_Mode == 0)
     {
         bypassEnable = 1;

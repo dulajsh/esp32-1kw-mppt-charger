@@ -92,6 +92,7 @@ bool OOC = 0;
 bool OTE = 0;
 bool ADS_Connected = 0;
 bool LCD_Connected = 0;
+bool OLED_Connected = 0;
 
 //===== SYSTEM PARAMETERS (INTEGERS) =====
 int inputSource = 0;
