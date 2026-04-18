@@ -15,8 +15,28 @@
 #include "telemetry.h"
 #include "charging.h"
 
+namespace
+{
+    bool isSerialListenerActive()
+    {
+#if defined(ARDUINO_USB_CDC_ON_BOOT) && ARDUINO_USB_CDC_ON_BOOT
+        // Native USB CDC can reliably report terminal open state with DTR.
+        return Serial && Serial.dtr();
+#else
+        // UART bridge boards cannot detect monitor-open reliably; this still
+        // suppresses telemetry when serial is not initialized/connected.
+        return (bool)Serial;
+#endif
+    }
+}
+
 void Onboard_Telemetry()
 {
+    if (!isSerialListenerActive())
+    {
+        return;
+    }
+
     currentSerialMillis = millis();
     if (currentSerialMillis - prevSerialMillis >= millisSerialInterval)
     {
