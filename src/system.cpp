@@ -83,6 +83,7 @@ void factoryReset()
     EEPROM.write(16, 3);
     EEPROM.write(17, 232);
     EEPROM.write(18, 0);
+    EEPROM.write(19, 0);
     EEPROM.commit();
     loadSettings();
 }
@@ -120,6 +121,12 @@ void loadSettings()
     {
         batteryPreset = 0;
     }
+
+    oledDisplayMode = EEPROM.read(19);
+    if (oledDisplayMode < 0 || oledDisplayMode > 1)
+    {
+        oledDisplayMode = 0;
+    }
 }
 
 void saveSettings()
@@ -155,6 +162,7 @@ void saveSettings()
     EEPROM.write(16, (inVoltageOffsetRaw >> 8) & 0xFF);
     EEPROM.write(17, inVoltageOffsetRaw & 0xFF);
     EEPROM.write(18, batteryPreset);
+    EEPROM.write(19, oledDisplayMode);
     EEPROM.commit();
 }
 

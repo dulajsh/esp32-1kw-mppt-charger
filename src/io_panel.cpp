@@ -58,6 +58,7 @@ namespace
         {"WiFi Enable", VALUE_BOOL, &enableWiFi, 0, 1, 1, 0},
         {"OLED Sleep", VALUE_BOOL, &oledSleepEnabled, 0, 1, 1, 0},
         {"Battery Preset", VALUE_INT, &batteryPreset, 0, 5, 1, 0},
+        {"OLED View", VALUE_INT, &oledDisplayMode, 0, 1, 1, 0},
     };
 
     const int menuItemCount = sizeof(menuItems) / sizeof(menuItems[0]);
@@ -389,6 +390,13 @@ namespace
             return;
         }
 
+        if (item.ptr == &oledDisplayMode)
+        {
+            const int mode = *static_cast<const int *>(item.ptr);
+            snprintf(buffer, size, "%s", mode == 1 ? "CHARGER" : "DEV");
+            return;
+        }
+
         if (item.type == VALUE_INT)
         {
             const int &v = *static_cast<const int *>(item.ptr);
@@ -456,15 +464,29 @@ namespace
     void drawStatusPage()
     {
         char line[24];
+        const bool compactChargerView = (oledDisplayMode == 1);
+        const int totalPages = compactChargerView ? 1 : 4;
+        const int activePage = compactChargerView ? 0 : statusPage;
 
         oled.clearBuffer();
         oled.setFont(u8g2_font_6x12_tf);
-        snprintf(line, sizeof(line), "MPPT STATUS %d/4", statusPage + 1);
+        snprintf(line, sizeof(line), "%s %d/%d", compactChargerView ? "CHARGER VIEW" : "MPPT STATUS", activePage + 1, totalPages);
         oled.drawStr(0, 10, line);
         drawWiFiIcon(114, 10);
         oled.drawLine(0, 12, 127, 12);
 
-        if (statusPage == 0)
+        if (compactChargerView)
+        {
+            snprintf(line, sizeof(line), "In  : %5.1fV %4.1fA", voltageInput, currentInput);
+            oled.drawStr(0, 25, line);
+            snprintf(line, sizeof(line), "Out : %5.1fV %4.1fA", voltageOutput, currentOutput);
+            oled.drawStr(0, 38, line);
+            snprintf(line, sizeof(line), "Pwr : %5.0fW %7.2fWh", powerInput, Wh);
+            oled.drawStr(0, 51, line);
+            snprintf(line, sizeof(line), "Run : %5.2fd Stage %d", daysRunning, chargingStage);
+            oled.drawStr(0, 64, line);
+        }
+        else if (activePage == 0)
         {
             snprintf(line, sizeof(line), "In  : %5.1fV %4.1fA", voltageInput, currentInput);
             oled.drawStr(0, 25, line);
@@ -475,7 +497,7 @@ namespace
             snprintf(line, sizeof(line), "Tmp : %2dC   Stage %d", temperature, chargingStage);
             oled.drawStr(0, 64, line);
         }
-        else if (statusPage == 1)
+        else if (activePage == 1)
         {
             snprintf(line, sizeof(line), "Wh  : %8.2f", Wh);
             oled.drawStr(0, 25, line);
@@ -486,7 +508,7 @@ namespace
             snprintf(line, sizeof(line), "Mode: %s", MPPT_Mode ? "MPPT+CCCV" : "CCCV");
             oled.drawStr(0, 64, line);
         }
-        else if (statusPage == 2)
+        else if (activePage == 2)
         {
             snprintf(line, sizeof(line), "ERR:%d REC:%d BNC:%d", ERR, REC, BNC);
             oled.drawStr(0, 25, line);
@@ -596,6 +618,8 @@ namespace
         {
             batteryPreset = 5;
         }
+
+        oledDisplayMode = constrain(oledDisplayMode, 0, 1);
 
         applyBatteryPreset(true);
         saveSettings();
@@ -710,14 +734,21 @@ void IO_Panel_Update()
 
         if (encoderDelta != 0)
         {
-            statusPage += (encoderDelta > 0) ? 1 : -1;
-            if (statusPage > 3)
+            if (oledDisplayMode == 1)
             {
                 statusPage = 0;
             }
-            if (statusPage < 0)
+            else
             {
-                statusPage = 3;
+                statusPage += (encoderDelta > 0) ? 1 : -1;
+                if (statusPage > 3)
+                {
+                    statusPage = 0;
+                }
+                if (statusPage < 0)
+                {
+                    statusPage = 3;
+                }
             }
             encoderDelta = 0;
             refreshRequested = true;
