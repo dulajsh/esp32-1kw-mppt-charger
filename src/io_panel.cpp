@@ -57,6 +57,7 @@ namespace
         {"Temp Max C", VALUE_INT, &temperatureMax, 40, 120, 1, 0},
         {"WiFi Enable", VALUE_BOOL, &enableWiFi, 0, 1, 1, 0},
         {"OLED Sleep", VALUE_BOOL, &oledSleepEnabled, 0, 1, 1, 0},
+        {"OLED Timeout", VALUE_INT, &oledSleepTimeoutSec, 5, 240, 5, 0},
         {"Battery Preset", VALUE_INT, &batteryPreset, 0, 5, 1, 0},
         {"OLED View", VALUE_INT, &oledDisplayMode, 0, 1, 1, 0},
     };
@@ -83,7 +84,6 @@ namespace
     const unsigned long debounceMs = 25;
     const unsigned long longPressMs = 1200;
     const int8_t encoderQuarterStepsPerMove = 2;
-    const unsigned long oledSleepTimeoutMs = 20000;
     bool oledSleeping = false;
     unsigned long lastUserActivityMs = 0;
     unsigned long lastEditTurnMs = 0;
@@ -397,6 +397,13 @@ namespace
             return;
         }
 
+        if (item.ptr == &oledSleepTimeoutSec)
+        {
+            const int timeoutSec = *static_cast<const int *>(item.ptr);
+            snprintf(buffer, size, "%ds", timeoutSec);
+            return;
+        }
+
         if (item.type == VALUE_INT)
         {
             const int &v = *static_cast<const int *>(item.ptr);
@@ -620,6 +627,7 @@ namespace
         }
 
         oledDisplayMode = constrain(oledDisplayMode, 0, 1);
+        oledSleepTimeoutSec = constrain(oledSleepTimeoutSec, 5, 240);
 
         applyBatteryPreset(true);
         saveSettings();
@@ -689,6 +697,7 @@ void IO_Panel_Update()
     updateButton(encoderSw, encoderPinSW, swShort, swLong);
 
     const unsigned long now = millis();
+    const unsigned long oledSleepTimeoutMs = (unsigned long)constrain(oledSleepTimeoutSec, 5, 240) * 1000UL;
     const bool userActivity = (encoderDelta != 0) || swShort || swLong || encoderSw.stablePressed;
     if (!oledSleepEnabled)
     {

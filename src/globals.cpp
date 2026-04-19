@@ -41,6 +41,7 @@ float currentCharging = 30.0000;
 float electricalPrice = 9.5000;
 int batteryPreset = 0;
 int oledDisplayMode = 0;
+int oledSleepTimeoutSec = 20;
 
 //===== CALIBRATION PARAMETERS =====
 bool ADS1015_Mode = 1;

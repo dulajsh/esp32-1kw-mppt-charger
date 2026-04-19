@@ -79,6 +79,7 @@ extern float currentCharging;
 extern float electricalPrice;
 extern int batteryPreset;
 extern int oledDisplayMode;
+extern int oledSleepTimeoutSec;
 
 //===== CALIBRATION PARAMETERS =====
 extern bool ADS1015_Mode;
