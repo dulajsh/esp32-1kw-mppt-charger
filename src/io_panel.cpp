@@ -470,9 +470,9 @@ namespace
 
     void drawStatusPage()
     {
-        char line[24];
+        char line[32];
         const bool compactChargerView = (oledDisplayMode == 1);
-        const int totalPages = compactChargerView ? 1 : 4;
+        const int totalPages = compactChargerView ? 1 : 5;
         const int activePage = compactChargerView ? 0 : statusPage;
 
         oled.clearBuffer();
@@ -526,7 +526,7 @@ namespace
             snprintf(line, sizeof(line), "ADS:%d LCD:%d OLE:%d", ADS_Connected, LCD_Connected, OLED_Connected);
             oled.drawStr(0, 64, line);
         }
-        else
+        else if (activePage == 3)
         {
             snprintf(line, sizeof(line), "PWM:%4d PP:%4d EN:%d", PWM, PPWM, buckEnable);
             oled.drawStr(0, 25, line);
@@ -536,6 +536,43 @@ namespace
             oled.drawStr(0, 51, line);
             snprintf(line, sizeof(line), "Loop:%6.2fms", loopTime);
             oled.drawStr(0, 64, line);
+        }
+        else
+        {
+            if (!enableWiFi)
+            {
+                snprintf(line, sizeof(line), "WiFi: Disabled");
+                oled.drawStr(0, 25, line);
+                snprintf(line, sizeof(line), "IP  : Disconnected");
+                oled.drawStr(0, 38, line);
+                snprintf(line, sizeof(line), "OTA : Disabled");
+                oled.drawStr(0, 51, line);
+                snprintf(line, sizeof(line), "Host: fugu-mppt-1kw");
+                oled.drawStr(0, 64, line);
+            }
+            else if (WiFi.status() == WL_CONNECTED)
+            {
+                snprintf(line, sizeof(line), "SSID: %.14s", WiFi.SSID().c_str());
+                oled.drawStr(0, 25, line);
+                snprintf(line, sizeof(line), "IP  : %s", WiFi.localIP().toString().c_str());
+                oled.drawStr(0, 38, line);
+                const long rssi = WiFi.RSSI();
+                snprintf(line, sizeof(line), "Sig : %lddBm (%s)", rssi, (WIFI ? "Online" : "Init"));
+                oled.drawStr(0, 51, line);
+                snprintf(line, sizeof(line), "OTA : Ready (Port 3232)");
+                oled.drawStr(0, 64, line);
+            }
+            else
+            {
+                snprintf(line, sizeof(line), "WiFi: Connecting...");
+                oled.drawStr(0, 25, line);
+                snprintf(line, sizeof(line), "IP  : Disconnected");
+                oled.drawStr(0, 38, line);
+                snprintf(line, sizeof(line), "SSID: %.14s", ssid);
+                oled.drawStr(0, 51, line);
+                snprintf(line, sizeof(line), "OTA : Waiting WiFi");
+                oled.drawStr(0, 64, line);
+            }
         }
 
         oled.sendBuffer();
@@ -750,13 +787,13 @@ void IO_Panel_Update()
             else
             {
                 statusPage += (encoderDelta > 0) ? 1 : -1;
-                if (statusPage > 3)
+                if (statusPage > 4)
                 {
                     statusPage = 0;
                 }
                 if (statusPage < 0)
                 {
-                    statusPage = 3;
+                    statusPage = 4;
                 }
             }
             encoderDelta = 0;
