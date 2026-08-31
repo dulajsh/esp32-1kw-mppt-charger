@@ -73,15 +73,22 @@ void setup()
         Serial.println("> WARNING: LCD not detected. LCD menu disabled.");
     }
 
-    ADC_SetGain();
-    ADS_Connected = ads.begin(0x48) || ads.begin(0x49) || ads.begin(0x4A) || ads.begin(0x4B);
+    uint8_t adsAddress = 0;
+    if (ads.begin(0x48)) adsAddress = 0x48;
+    else if (ads.begin(0x49)) adsAddress = 0x49;
+    else if (ads.begin(0x4A)) adsAddress = 0x4A;
+    else if (ads.begin(0x4B)) adsAddress = 0x4B;
+
+    ADS_Connected = (adsAddress != 0);
+    adsDetectedAddress = adsAddress;
     if (ADS_Connected)
     {
-        Serial.println("> ADS1015 detected on I2C");
+        ADC_SetGain();
+        Serial.printf("> ADS1115 detected on I2C address 0x%02X\n", adsAddress);
     }
     else
     {
-        Serial.println("> WARNING: ADS1015 not detected. ADC reads disabled.");
+        Serial.println("> WARNING: ADS1115 not detected on I2C (0x48-0x4B). ADC reads disabled.");
     }
 
     buck_Disable();

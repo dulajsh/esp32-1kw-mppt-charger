@@ -517,13 +517,20 @@ namespace
         }
         else if (activePage == 2)
         {
-            snprintf(line, sizeof(line), "ERR:%d REC:%d BNC:%d", ERR, REC, BNC);
+            if (ADS_Connected)
+            {
+                snprintf(line, sizeof(line), "ADS: OK [0x%02X] ERR:%d", adsDetectedAddress, ERR);
+            }
+            else
+            {
+                snprintf(line, sizeof(line), "ADS: NO COMM   ERR:%d", ERR);
+            }
             oled.drawStr(0, 25, line);
-            snprintf(line, sizeof(line), "IUV:%d IOC:%d OOV:%d", IUV, IOC, OOV);
+            snprintf(line, sizeof(line), "A0:%5.3fV A1:%5.3fV", rawADC_A0, rawADC_A1);
             oled.drawStr(0, 38, line);
-            snprintf(line, sizeof(line), "OOC:%d OTE:%d FLV:%d", OOC, OTE, FLV);
+            snprintf(line, sizeof(line), "A2:%5.3fV A3:%5.3fV", rawADC_A2, rawADC_A3);
             oled.drawStr(0, 51, line);
-            snprintf(line, sizeof(line), "ADS:%d LCD:%d OLE:%d", ADS_Connected, LCD_Connected, OLED_Connected);
+            snprintf(line, sizeof(line), "In:%4.1fV Out:%4.1fV", voltageInput, voltageOutput);
             oled.drawStr(0, 64, line);
         }
         else if (activePage == 3)

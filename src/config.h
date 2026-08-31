@@ -13,7 +13,7 @@
 //===== OBJECT INSTANCES =====
 extern LiquidCrystal_I2C lcd;
 extern TaskHandle_t Core2;
-extern Adafruit_ADS1015 ads;
+extern Adafruit_ADS1115 ads;
 
 //===== PIN DEFINITIONS =====
 #define backflow_MOSFET 27
@@ -39,9 +39,13 @@ extern Adafruit_ADS1015 ads;
 #define I2C_SCL_PIN 22
 #define I2C_FREQUENCY 400000
 
-// 1 = allow serial telemetry on UART bridge boards (no reliable monitor-open detect)
-// 0 = disable UART telemetry by default to avoid loop-time overhead when USB monitor is closed
-#define ALLOW_UART_SERIAL_TELEMETRY 0
+#define ALLOW_UART_SERIAL_TELEMETRY 1
+
+extern uint8_t adsDetectedAddress;
+extern float rawADC_A0;
+extern float rawADC_A1;
+extern float rawADC_A2;
+extern float rawADC_A3;
 
 //===== WiFi CREDENTIALS =====
 extern char auth[];

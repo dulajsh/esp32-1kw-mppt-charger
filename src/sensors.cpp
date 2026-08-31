@@ -70,13 +70,26 @@ void Read_Sensors()
 
     if (ADS_Connected)
     {
+        rawADC_A0 = ads.computeVolts(ads.readADC_SingleEnded(0));
+        rawADC_A1 = ads.computeVolts(ads.readADC_SingleEnded(1));
+        rawADC_A2 = ads.computeVolts(ads.readADC_SingleEnded(2));
+        rawADC_A3 = ads.computeVolts(ads.readADC_SingleEnded(3));
+
         for (int i = 0; i < avgCountVS; i++)
         {
             VSI = VSI + ads.computeVolts(ads.readADC_SingleEnded(3));
             VSO = VSO + ads.computeVolts(ads.readADC_SingleEnded(1));
         }
         voltageInput = ((VSI / avgCountVS) * inVoltageDivRatio) + inVoltageOffset;
+        if (voltageInput < 0.0f)
+        {
+            voltageInput = 0.0000f;
+        }
         voltageOutput = ((VSO / avgCountVS) * outVoltageDivRatio) + outVoltageOffset;
+        if (voltageOutput < 0.0f)
+        {
+            voltageOutput = 0.0000f;
+        }
 
         for (int i = 0; i < avgCountCS; i++)
         {

@@ -3,7 +3,12 @@
 //===== OBJECT INSTANCES =====
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 TaskHandle_t Core2;
-Adafruit_ADS1015 ads;
+Adafruit_ADS1115 ads;
+uint8_t adsDetectedAddress = 0;
+float rawADC_A0 = 0.0f;
+float rawADC_A1 = 0.0f;
+float rawADC_A2 = 0.0f;
+float rawADC_A3 = 0.0f;
 
 //===== WiFi CREDENTIALS =====
 char auth[] = "geryVCW7mfVhKnqazrBPQmowDg1p2TA-";
@@ -44,7 +49,7 @@ int oledDisplayMode = 0;
 int oledSleepTimeoutSec = 20;
 
 //===== CALIBRATION PARAMETERS =====
-bool ADS1015_Mode = 1;
+bool ADS1015_Mode = 0;
 int ADC_GainSelect = 2;
 int avgCountVS = 2;
 int avgCountCS = 2;
