@@ -3,7 +3,8 @@
 Firmware for a high-power DIY solar charge controller using ESP32, ADS1015, and a buck stage with MPPT/CV behavior.
 
 Reference project (inspiration):
-- https://www.instructables.com/DIY-1kW-MPPT-Solar-Charge-Controller/
+- Original Guide: [Instructables - DIY 1kW MPPT Solar Charge Controller](https://www.instructables.com/DIY-1kW-MPPT-Solar-Charge-Controller/)
+- Reference Files & Schematics: [`reference/AngeloCasi's FUGU-ARDUINO-MPPT/README.md`](reference/AngeloCasi%27s%20FUGU-ARDUINO-MPPT/README.md)
 
 This fork focuses on cleaner structure, practical protection logic, easier tuning, and smoother PlatformIO development.
 
@@ -86,17 +87,36 @@ Dual-core split:
 ```text
 .
 |-- platformio.ini
+|-- include/
+|   |-- config.h
+|   |-- charging.h
+|   |-- protection.h
+|   |-- sensors.h
+|   |-- telemetry.h
+|   |-- lcd.h
+|   |-- io_panel.h
+|   `-- system.h
 |-- src/
 |   |-- main.cpp
-|   |-- charging.cpp/.h
-|   |-- protection.cpp/.h
-|   |-- sensors.cpp/.h
-|   |-- telemetry.cpp/.h
-|   |-- lcd.cpp/.h
-|   |-- system.cpp/.h
 |   |-- globals.cpp
-|   `-- config.h
-|-- include/
+|   |-- charging.cpp
+|   |-- protection.cpp
+|   |-- sensors.cpp
+|   |-- telemetry.cpp
+|   |-- lcd.cpp
+|   |-- io_panel.cpp
+|   `-- system.cpp
+|-- reference/
+|   `-- AngeloCasi's FUGU-ARDUINO-MPPT/
+|       |-- README.md
+|       |-- main-board-schematic.png
+|       |-- main-board-proteus.pdsprj
+|       |-- main-board-gerber.zip
+|       |-- Parts List.xlsx
+|       |-- Inductor Calculator.xlsx
+|       |-- TechBuilder - MPPT CALCULATOR.xlsx
+|       |-- Efficiency Curve Test.xlsx
+|       `-- ARDUINO_MPPT_FIRMWARE_V1.1.1.zip
 |-- lib/
 `-- test/
 ```
@@ -122,13 +142,13 @@ Dual-core split:
 
 Notes:
 - OLED mode uses encoder pins. LCD mode uses legacy button pins.
-- Encoder polarity/pull mode is controlled by `encoderCommonPositive` in `src/config.h`.
+- Encoder polarity/pull mode is controlled by `encoderCommonPositive` in `include/config.h`.
 
 ## Configuration Guide
 
 Main tuning location:
 - `src/globals.cpp` (default values)
-- `src/config.h` (extern declarations and shared parameters)
+- `include/config.h` (extern declarations and shared parameters)
 
 UI behavior location:
 - `src/io_panel.cpp` (OLED + rotary encoder menu logic)

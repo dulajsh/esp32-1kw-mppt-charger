@@ -1,74 +1,104 @@
 # Original Reference: Angelo Casi's FUGU-ARDUINO-MPPT (1kW MPPT Solar Charge Controller)
 
-This directory contains the original reference design files, engineering calculators, schematics, PCB Gerbers, and legacy firmware created by **Angelo Casi (TechBuilder)** for the **DIY 1kW MPPT Solar Charge Controller (FUGU)**.
+This directory contains the complete archive of original reference design files, engineering calculators, schematics, PCB Gerbers, and legacy firmware created by **Angelo Casi (TechBuilder)** for the **DIY 1kW MPPT Solar Charge Controller (FUGU)**.
 
 ---
 
 ## 📌 Project Overview & Links
 
 * **Original Creator:** Angelo Casi ([TechBuilder](https://www.instructables.com/member/Angelo+Casimiro/))
-* **Instructables Guide:** [DIY 1kW MPPT Solar Charge Controller](https://www.instructables.com/DIY-1kW-MPPT-Solar-Charge-Controller/)
+* **Instructables Guide:** [DIY 1kW MPPT Solar Charge Controller (100% Free)](https://www.instructables.com/DIY-1kW-MPPT-Solar-Charge-Controller/)
 * **Project Reference Name:** FUGU-ARDUINO-MPPT / FUGU-ESP32 MPPT
-
-### Key Design Specifications
-| Parameter | Specification | Notes |
-|---|---|---|
-| **Topology** | Synchronous Buck Converter | High-side & Low-side N-Channel MOSFETs |
-| **Max PV Input Voltage ($V_{in}$)** | $80\text{ V}$ ($V_{oc} < 80\text{ V}$) | Absolute hardware maximum limit |
-| **Battery Voltage Range ($V_{out}$)** | $10\text{ V} - 60\text{ V}$ | Supports 12V, 24V, 36V, and 48V nominal banks |
-| **Max Continuous Output Current** | $30\text{ A} - 40\text{ A}$ | Dependent on heatsink size and active fan cooling |
-| **Max Power Output ($P_{max}$)** | $\approx 1000\text{ W} \text{ (1 kW)}$ | Scalable based on thermal design |
-| **Efficiency** | Up to $96\% - 98\%$ | Varies with input/output differential & load |
-| **MCU Platform** | ESP32 (WROOM-32 / Feather ESP32) | Dual-core 240 MHz, hardware PWM & Wi-Fi |
-| **ADC Subsystem** | Adafruit ADS1015 (12-bit) / ADS1115 (16-bit) | Dedicated high-precision external I²C ADC |
-| **Current Sensing** | Hall-Effect Current Sensor (e.g. ACS712 / ACS758 / ACS770) | Isolated high-current measurement |
-| **Display / User Interface** | 16×2 I²C LCD or 0.96" SSD1306 OLED | Rotary encoder or 4-button navigation |
-| **Thermal Protection** | 100k NTC thermistor | Active 12V fan speed regulation & thermal shutdown |
+* **Hardware Generation:** V1.1 / V1.2 Main Board
 
 ---
 
-## 📂 Directory Contents & File Descriptions
+## ⚡ Technical Specifications
+
+| Parameter | Specification | Engineering Details & Limits |
+|---|---|---|
+| **Topology** | Synchronous Buck Converter | High-side & Low-side N-Channel MOSFET switching |
+| **Max PV Input Voltage ($V_{in}$)** | $80\text{ V}$ ($V_{oc} < 80\text{ V}$) | Limited by input capacitor voltage & MOSFET $V_{ds}$ ratings |
+| **Min PV Input Voltage ($V_{in}$)** | $15\text{ V}$ | Must be higher than battery voltage ($V_{in} > V_{bat} + \text{dropout}$) |
+| **Battery Compatibility ($V_{out}$)** | $10\text{ V} - 60\text{ V}$ | 12V, 24V, 36V, and 48V nominal battery configurations |
+| **Max Continuous Output Current** | $30\text{ A} - 40\text{ A}$ | With active fan cooling and low $R_{ds(on)}$ MOSFETs |
+| **Max Power Handling ($P_{max}$)** | $\approx 1000\text{ W} \text{ (1 kW)}$ | e.g. $\sim 30\text{ A} \times 33.6\text{ V}$ (24V system) or $\sim 20\text{ A} \times 50\text{ V}$ (48V system) |
+| **Peak Efficiency** | $96\% - 98.2\%$ | Lowest losses when $V_{in}$ is close to $V_{mp}$ of the battery |
+| **Switching Frequency ($f_{sw}$)** | $40\text{ kHz} - 50\text{ kHz}$ | Optimal trade-off between switching losses & inductor size |
+| **Microcontroller Platform** | ESP32-WROOM-32 (NodeMCU / Feather) | Dual 32-bit Xtensa LX6 cores @ 240 MHz, hardware LEDC PWM |
+| **ADC Subsystem** | Adafruit ADS1015 (12-bit) / ADS1115 (16-bit) | External high-precision I²C ADC with programmable gain |
+| **Current Sensing Method** | Hall-Effect Sensor IC (ACS712 / ACS758 / ACS770) | Galvanically isolated, bi-directional current measurement |
+| **Gate Driver IC** | IR2104 / IR2104S (Half-Bridge Driver) | High-voltage bootstrap driver with internal dead-time (~520ns) |
+| **User Interface** | 16×2 I²C Character LCD / 0.96" SSD1306 OLED | 4 Push Buttons (Select, Back, Left, Right) or Rotary Encoder |
+| **Thermal Management** | Active PWM / On-Off Fan + 100k NTC Thermistor | Heatsink temperature monitoring with auto-shutdown ($>60^\circ\text{C}$) |
+
+---
+
+## 📂 File Inventory & Technical Description
 
 ```text
 reference/AngeloCasi's FUGU-ARDUINO-MPPT/
-├── README.md                          # This reference overview documentation
-├── ARDUINO_MPPT_FIRMWARE_V1.1.1.zip   # Original Arduino sketch firmware bundle (v1.1.1)
-├── Parts List.xlsx                    # Complete Bill of Materials (BOM) & component specs
-├── Inductor Calculator.xlsx           # Custom toroidal inductor design and winding tool
-├── TechBuilder - MPPT CALCULATOR.xlsx # PV array sizing, duty cycle, and battery parameter tool
-├── Efficiency Curve Test.xlsx         # Bench test logs and efficiency measurements
-├── main-board-schematic.png           # High-resolution full schematic diagram
-├── main-board-proteus.pdsprj          # Proteus ISIS / ARES project file (schematics & layout)
-└── main-board-gerber.zip              # Manufacturing Gerber package for PCB fabrication
+├── README.md                          # Comprehensive technical reference manual
+├── ARDUINO_MPPT_FIRMWARE_V1.1.1.zip   # Legacy Arduino IDE firmware archive (v1.1.1)
+├── Parts List.xlsx                    # Detailed Bill of Materials (BOM) with component ratings
+├── Inductor Calculator.xlsx           # Toroidal inductor design, core selection & winding tool
+├── TechBuilder - MPPT CALCULATOR.xlsx # Solar array sizing, MPPT duty cycle & power estimator
+├── Efficiency Curve Test.xlsx         # Empirical bench measurements & efficiency logs
+├── main-board-schematic.png           # Complete circuit schematic diagram
+├── main-board-proteus.pdsprj          # Proteus ISIS schematic and ARES PCB layout source
+└── main-board-gerber.zip              # Manufacturing Gerber files (RS-274X) for PCB fabrication
 ```
 
-### 1. Hardware & Manufacturing Files
-* **`main-board-schematic.png`**: High-resolution circuit schematic showing the power stage, gate drivers (IR2104 / discrete drivers), buck inductor, buck capacitors, ESP32 connections, ADS1015 ADC wiring, and sensor front-ends.
-* **`main-board-proteus.pdsprj`**: Proteus CAD project file containing the full schematic and double-sided PCB layout.
-* **`main-board-gerber.zip`**: Production-ready RS-274X Gerber and Excellon drill files for ordering bare PCBs from fabrication houses (e.g., JLCPCB, PCBWay).
-* **`Parts List.xlsx`**: Detailed spreadsheet listing all passives, active semiconductors (MOSFETs, gate drivers, regulators), connectors, sensors, and mechanical hardware.
+### 1. Circuit Design & Manufacturing Files
+* **`main-board-schematic.png`**:
+  * **Power Stage:** IRFB4110 / IRF3205 / N-Channel MOSFETs arranged in half-bridge buck configuration.
+  * **Gate Drive:** IR2104 half-bridge driver powered by a 12V auxiliary rail, generating high-side bootstrap drive ($V_B - V_S$) and complementary low-side switching.
+  * **Backflow Prevention:** Output P-channel or N-channel MOSFET switch preventing reverse current from battery to solar panel during night/low-light.
+  * **Auxiliary Power:** Multi-stage buck/linear regulators stepping down high PV voltage to +12V (gate drive / fan) and +5V / +3.3V (ESP32 and logic).
+* **`main-board-proteus.pdsprj`**: Complete Labcenter Proteus 8 CAD design package. Can be used for circuit simulation, schematic modifications, and PCB layout editing.
+* **`main-board-gerber.zip`**: Standard RS-274X layer stack and NC drill files formatted for fabrication with JLCPCB, PCBWay, OSHPark, etc.
+* **`Parts List.xlsx`**: Detailed BOM itemizing:
+  * Power MOSFETs ($V_{ds} \ge 100\text{V}$, ultra-low $R_{ds(on)} < 5\text{ m}\Omega$)
+  * High-frequency, low-ESR electrolytic and ceramic filter capacitors ($100\text{V}$ rated)
+  * Current sensor ICs, ADS1015/ADS1115 ADC breakout modules
+  * Shottky freewheeling diodes, TVS surge protection diodes, and 12V cooling fans
 
-### 2. Engineering Calculators & Test Sheets
-* **`Inductor Calculator.xlsx`**: Tool for calculating custom toroidal inductor parameters:
-  * Core selection (Kool Mμ / Sendust / Iron Powder - e.g., T157-2, MS-157125-2)
-  * Required inductance ($L$), number of turns ($N$), wire gauge (AWG), and parallel strands
-  * Current ripple ($\Delta I_L$) and core saturation margin at peak currents
-* **`TechBuilder - MPPT CALCULATOR.xlsx`**: System dimensioning calculator for solar panel string configuration, open-circuit voltage ($V_{oc}$), maximum power point voltage ($V_{mp}$), battery charging stages, and theoretical duty cycle range.
-* **`Efficiency Curve Test.xlsx`**: Empirical bench-test data logging input power, output power, heat dissipation, and efficiency curves across various voltage levels and load currents.
+### 2. Design Calculators & Test Data
+* **`Inductor Calculator.xlsx`**:
+  * Calculates core geometry and required magnetic properties (Sendust / Kool Mμ / High Flux / Iron Powder).
+  * Computes required inductance:
+    $$L = \frac{V_{out} \times (V_{in} - V_{out})}{\Delta I_L \times f_{sw} \times V_{in}}$$
+  * Determines number of turns ($N$), wire diameter, and parallel copper strands (bifilar/trifilar winding) to minimize skin effect and $I^2R$ copper losses at $40\text{--}50\text{ kHz}$.
+* **`TechBuilder - MPPT CALCULATOR.xlsx`**:
+  * Computes panel series/parallel string arrangements ($V_{mp}$, $I_{mp}$, $V_{oc}$, $I_{sc}$).
+  * Computes theoretical duty cycle ($D = V_{out} / V_{in}$) and predicts buck output parameters across solar irradiance levels.
+* **`Efficiency Curve Test.xlsx`**:
+  * Contains real benchtop test logs capturing efficiency curves across varying loads ($5\text{A}$ to $35\text{A}$) and voltage deltas.
 
 ### 3. Firmware Archive
-* **`ARDUINO_MPPT_FIRMWARE_V1.1.1.zip`**: The original Arduino IDE codebase (v1.1.1) containing:
-  * Perturb and Observe (P&O) MPPT tracking loop
-  * Lead-acid / LiFePO4 multi-stage charging (Bulk, Absorption, Float)
-  * 4-button menu and 16×2 LCD user interface
-  * Legacy Blynk integration
+* **`ARDUINO_MPPT_FIRMWARE_V1.1.1.zip`**:
+  * Original Arduino `.ino` monolithic firmware implementing:
+    * Perturb and Observe (P&O) MPPT tracking algorithm
+    * Constant Current (CC) & Constant Voltage (CV) charging phases
+    * Basic LCD display routines and 4-button menu state machine
+    * Legacy Blynk IoT integration for remote data monitoring
 
 ---
 
-## ⚡ Relationship to this Repository
+## 🔄 Upgrades in the Main Repository
 
-The root project in this repository is a **heavily refactored and modernized rewrite** of Angelo Casi's original concept, adapted for PlatformIO with:
-1. **Modular Code Architecture**: Header files placed in [`include/`](../../include/) and source files in [`src/`](../../src/).
-2. **Dual Core FreeRTOS Execution**: Core 1 handles fast control/MPPT/protection loops, Core 0 manages Wi-Fi, OTA, and cloud telemetry.
-3. **Advanced UI**: Support for high-resolution SSD1306 128×64 OLED with rotary encoder, alongside legacy 16×2 LCD support.
-4. **Enhanced Safety Protection**: Predictive PWM startup, input/output over-current and over-voltage trips, backflow prevention, and thermal derating.
+The modernized firmware in the root of this repository ([`esp32-1kw-mppt-charger`](../../)) builds on Angelo Casi's original hardware concept with the following software and architectural enhancements:
+
+1. **PlatformIO & Modern C++ Structure**:
+   * Header files organized under [`include/`](../../include/) and implementation under [`src/`](../../src/).
+   * Clean separation of concerns: `charging`, `protection`, `sensors`, `system`, `telemetry`, `io_panel`, and `lcd`.
+2. **Dual-Core FreeRTOS Partitioning**:
+   * **Core 1:** Time-critical high-frequency sensor sampling, MPPT tracking, PWM modulation, and fast protection loops.
+   * **Core 0:** Asynchronous background tasks including Wi-Fi, Blynk IoT, and Arduino OTA.
+3. **Advanced OLED & Rotary Encoder UI**:
+   * High-contrast SSD1306 OLED interface with dynamic graph displays and intuitive rotary encoder navigation.
+   * Backward compatibility with legacy 16×2 I²C LCD screens.
+4. **Enhanced Hardware Protection Logic**:
+   * Predictive PWM startup (prevents sudden high inrush currents upon converter engagement).
+   * Multi-stage safety checks: Input Overcurrent (IOC), Input Undervoltage (IUV), Output Overvoltage (OOV), Output Overcurrent (OOC), and Overtemperature (OTE).
+   * Safe calibration mode that disables PWM while altering charging settings.
