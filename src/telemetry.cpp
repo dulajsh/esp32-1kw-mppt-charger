@@ -57,36 +57,13 @@ namespace
             digitalWrite(FAN, LOW);
 
             Serial.println("\n> [OTA] Update starting (" + type + ")...");
-            if (OLED_Connected)
-            {
-                IO_Panel_ShowOTAProgress(0, OTA_STATE_STARTING);
-            }
-            else if (LCD_Connected)
-            {
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("OTA FLASH START ");
-                lcd.setCursor(0, 1);
-                lcd.print("CHARGER STOPPED ");
-            }
         });
 
         ArduinoOTA.onEnd([]() {
             otaState = OTA_STATE_SUCCESS;
             otaProgressPercent = 100;
             Serial.println("\n> [OTA] Update finished successfully. Rebooting...");
-            if (OLED_Connected)
-            {
-                IO_Panel_ShowOTAProgress(100, OTA_STATE_SUCCESS);
-            }
-            else if (LCD_Connected)
-            {
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("FLASH COMPLETED!");
-                lcd.setCursor(0, 1);
-                lcd.print("Rebooting ESP32 ");
-            }
+            delay(600);
         });
 
         ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
@@ -107,16 +84,6 @@ namespace
             else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
             else if (error == OTA_END_ERROR) Serial.println("End Failed");
 
-            if (OLED_Connected)
-            {
-                IO_Panel_ShowOTAProgress(otaProgressPercent, OTA_STATE_ERROR);
-            }
-            else if (LCD_Connected)
-            {
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("OTA FAILED!     ");
-            }
             delay(3000);
             otaUpdating = false;
             chargingPause = false;

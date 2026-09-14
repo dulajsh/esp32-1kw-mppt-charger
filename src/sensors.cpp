@@ -4,6 +4,7 @@ void ADC_SetGain()
 {
     if (ADS1015_Mode == true)
     {
+        ads.setDataRate(RATE_ADS1015_3300SPS);
         if (ADC_GainSelect == 0)
         {
             ads.setGain(GAIN_TWOTHIRDS);
@@ -22,6 +23,7 @@ void ADC_SetGain()
     }
     else
     {
+        ads.setDataRate(RATE_ADS1115_860SPS);
         if (ADC_GainSelect == 0)
         {
             ads.setGain(GAIN_TWOTHIRDS);
@@ -64,53 +66,54 @@ void Read_Sensors()
         TS = 0;
     }
 
-    VSI = 0.0000;
-    VSO = 0.0000;
-    CSI = 0.0000;
-
     if (ADS_Connected)
     {
-        rawADC_A0 = ads.computeVolts(ads.readADC_SingleEnded(0));
-        rawADC_A1 = ads.computeVolts(ads.readADC_SingleEnded(1));
-        rawADC_A2 = ads.computeVolts(ads.readADC_SingleEnded(2));
-        rawADC_A3 = ads.computeVolts(ads.readADC_SingleEnded(3));
+        if (lockI2C(pdMS_TO_TICKS(35)))
+        {
+            rawADC_A1 = ads.computeVolts(ads.readADC_SingleEnded(1));
+            rawADC_A3 = ads.computeVolts(ads.readADC_SingleEnded(3));
+            rawADC_A2 = ads.computeVolts(ads.readADC_SingleEnded(2));
 
-        for (int i = 0; i < avgCountVS; i++)
-        {
-            VSI = VSI + ads.computeVolts(ads.readADC_SingleEnded(3));
-            VSO = VSO + ads.computeVolts(ads.readADC_SingleEnded(1));
-        }
-        voltageInput = ((VSI / avgCountVS) * inVoltageDivRatio) + inVoltageOffset;
-        if (voltageInput < 0.0f)
-        {
-            voltageInput = 0.0000f;
-        }
-        voltageOutput = ((VSO / avgCountVS) * outVoltageDivRatio) + outVoltageOffset;
-        if (voltageOutput < 0.0f)
-        {
-            voltageOutput = 0.0000f;
-        }
+            static uint8_t a0Cycle = 0;
+            if (++a0Cycle >= 25)
+            {
+                a0Cycle = 0;
+                rawADC_A0 = ads.computeVolts(ads.readADC_SingleEnded(0));
+            }
+            unlockI2C();
 
-        for (int i = 0; i < avgCountCS; i++)
-        {
-            CSI = CSI + ads.computeVolts(ads.readADC_SingleEnded(2));
-        }
-        CSI_converted = (CSI / avgCountCS) * 1.3300;
-        currentInput = ((CSI_converted - currentMidPoint) * -1) / currentSensV;
-        if (currentInput < 0)
-        {
-            currentInput = 0.0000;
-        }
-        if (voltageOutput < 1.0f)
-        {
-            currentOutput = 0.0000f;
-        }
-        else
-        {
-            currentOutput = (voltageInput * currentInput) / voltageOutput;
-            if (currentOutput < 0.0f)
+            VSO = rawADC_A1;
+            VSI = rawADC_A3;
+            CSI = rawADC_A2;
+
+            voltageInput = (VSI * inVoltageDivRatio) + inVoltageOffset;
+            if (voltageInput < 0.0f)
+            {
+                voltageInput = 0.0000f;
+            }
+            voltageOutput = (VSO * outVoltageDivRatio) + outVoltageOffset;
+            if (voltageOutput < 0.0f)
+            {
+                voltageOutput = 0.0000f;
+            }
+
+            CSI_converted = CSI * 1.3300;
+            currentInput = ((CSI_converted - currentMidPoint) * -1) / currentSensV;
+            if (currentInput < 0)
+            {
+                currentInput = 0.0000;
+            }
+            if (voltageOutput < 1.0f)
             {
                 currentOutput = 0.0000f;
+            }
+            else
+            {
+                currentOutput = (voltageInput * currentInput) / voltageOutput;
+                if (currentOutput < 0.0f)
+                {
+                    currentOutput = 0.0000f;
+                }
             }
         }
     }
@@ -138,7 +141,7 @@ void Read_Sensors()
 
     if (ADS_Connected && buckEnable == 0 && FLV == 0 && OOV == 0)
     {
-        currentMidPoint = ((CSI / avgCountCS) * 1.3300) - 0.003;
+        currentMidPoint = (CSI * 1.3300) - 0.003;
     }
 
     powerInput = voltageInput * currentInput;

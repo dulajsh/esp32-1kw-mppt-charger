@@ -30,10 +30,6 @@ void System_Processes()
         digitalWrite(FAN, LOW);
     }
 
-    loopTimeStart = micros();
-    loopTime = (loopTimeStart - loopTimeEnd) / 1000.000;
-    loopTimeEnd = micros();
-
     if (telemCounterReset == 0)
     {
     }

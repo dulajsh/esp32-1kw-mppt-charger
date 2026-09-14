@@ -295,8 +295,11 @@ void Charging_Algorithm()
             psuModeStatus = true;
             float iErr = currentOutput - psuCurrentLimit;
             int step = 1;
-            if (iErr > 2.0f) step = 5;
-            else if (iErr > 0.5f) step = 2;
+            if (iErr > 4.0f) step = 25;
+            else if (iErr > 2.0f) step = 15;
+            else if (iErr > 1.0f) step = 8;
+            else if (iErr > 0.4f) step = 4;
+            else if (iErr > 0.1f) step = 2;
             PWM -= step;
         }
         else
@@ -304,20 +307,24 @@ void Charging_Algorithm()
             // Constant Voltage (CV) Mode: adjust PWM to match psuVoltageTarget
             psuModeStatus = false;
             float vErr = psuVoltageTarget - voltageOutput;
-            if (vErr > 0.05f)
+            if (vErr > 0.03f)
             {
                 int step = 1;
-                if (vErr > 5.0f) step = 15;
-                else if (vErr > 2.0f) step = 8;
-                else if (vErr > 0.5f) step = 3;
+                if (vErr > 4.0f) step = 35;
+                else if (vErr > 2.0f) step = 20;
+                else if (vErr > 1.0f) step = 10;
+                else if (vErr > 0.4f) step = 5;
+                else if (vErr > 0.1f) step = 2;
                 PWM += step;
             }
-            else if (vErr < -0.05f)
+            else if (vErr < -0.03f)
             {
                 int step = 1;
-                if (vErr < -5.0f) step = 15;
-                else if (vErr < -2.0f) step = 8;
-                else if (vErr < -0.5f) step = 3;
+                if (vErr < -4.0f) step = 35;
+                else if (vErr < -2.0f) step = 20;
+                else if (vErr < -1.0f) step = 10;
+                else if (vErr < -0.4f) step = 5;
+                else if (vErr < -0.1f) step = 2;
                 PWM -= step;
             }
         }

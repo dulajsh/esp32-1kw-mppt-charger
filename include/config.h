@@ -41,6 +41,13 @@ extern Adafruit_ADS1115 ads;
 
 #define ALLOW_UART_SERIAL_TELEMETRY 1
 
+//===== DUAL-CORE I2C THREAD SAFETY =====
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+extern SemaphoreHandle_t i2cMutex;
+bool lockI2C(TickType_t waitTicks = pdMS_TO_TICKS(35));
+void unlockI2C();
+
 extern uint8_t adsDetectedAddress;
 extern float rawADC_A0;
 extern float rawADC_A1;

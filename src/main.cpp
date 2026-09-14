@@ -14,14 +14,72 @@ static bool isI2CDevicePresent(uint8_t address)
     return Wire.endTransmission() == 0;
 }
 
-//===== CORE0: SETUP & LOOP (DUAL CORE MODE) =====
+//===== CORE0: HIGH-PRIORITY UI & ENCODER TASK =====
+void uiTask(void *pvParameters)
+{
+    while (1)
+    {
+        if (otaUpdating)
+        {
+            if (OLED_Connected)
+            {
+                IO_Panel_ShowOTAProgress(otaProgressPercent, otaState);
+            }
+            else if (LCD_Connected)
+            {
+                static unsigned int lastLcdPercent = 999;
+                if (otaProgressPercent != lastLcdPercent)
+                {
+                    lastLcdPercent = otaProgressPercent;
+                    if (lockI2C(pdMS_TO_TICKS(25)))
+                    {
+                        lcd.setCursor(0, 0);
+                        lcd.print("OTA UPDATING... ");
+                        lcd.setCursor(0, 1);
+                        lcd.printf("Progress: %3u%%  ", otaProgressPercent);
+                        unlockI2C();
+                    }
+                }
+            }
+            vTaskDelay(pdMS_TO_TICKS(30));
+            continue;
+        }
+
+        if (OLED_Connected)
+        {
+            IO_Panel_Update();
+        }
+        else if (LCD_Connected)
+        {
+            LCD_Menu();
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(5));
+    }
+}
+
+//===== CORE0: BACKGROUND NETWORK & TELEMETRY TASK =====
 void coreTwo(void *pvParameters)
 {
     setupWiFi();
+    unsigned long lastSystemMillis = 0;
+
     while (1)
     {
+        // 1. WiFi & network telemetry
         Wireless_Telemetry();
-        vTaskDelay(pdMS_TO_TICKS(5));
+
+        unsigned long now = millis();
+
+        // 2. System housekeeping & serial telemetry (~100ms)
+        if (now - lastSystemMillis >= 100)
+        {
+            lastSystemMillis = now;
+            System_Processes();
+            Onboard_Telemetry();
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
@@ -48,6 +106,7 @@ void setup()
     pwmMax = pow(2, pwmResolution) - 1;
     pwmMaxLimited = (PWM_MaxDC * pwmMax) / 100.000;
 
+    i2cMutex = xSemaphoreCreateMutex();
     Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQUENCY);
     Serial.printf("> I2C initialized (SDA=%d, SCL=%d, FREQ=%d)\n", I2C_SDA_PIN, I2C_SCL_PIN, I2C_FREQUENCY);
 
@@ -93,7 +152,8 @@ void setup()
 
     buck_Disable();
 
-    xTaskCreatePinnedToCore(coreTwo, "coreTwo", 10000, NULL, 0, &Core2, 0);
+    xTaskCreatePinnedToCore(uiTask, "uiTask", 4096, NULL, 2, NULL, 0);
+    xTaskCreatePinnedToCore(coreTwo, "coreTwo", 10000, NULL, 1, &Core2, 0);
 
     EEPROM.begin(512);
     Serial.println("> FLASH MEMORY: STORAGE INITIALIZED");
@@ -116,7 +176,7 @@ void setup()
     Serial.println("> MPPT HAS INITIALIZED");
 }
 
-//===== CORE1: LOOP (DUAL CORE MODE) =====
+//===== CORE1: DEDICATED HIGH-SPEED POWER CONVERSION LOOP =====
 void loop()
 {
     if (otaUpdating)
@@ -126,34 +186,20 @@ void loop()
         bypassEnable = 0;
         digitalWrite(backflow_MOSFET, LOW);
         digitalWrite(FAN, LOW);
-
-        if (OLED_Connected)
-        {
-            IO_Panel_ShowOTAProgress(otaProgressPercent, otaState);
-        }
-        else if (LCD_Connected)
-        {
-            lcd.setCursor(0, 0);
-            lcd.print("OTA UPDATING... ");
-            lcd.setCursor(0, 1);
-            lcd.printf("Progress: %3u%%  ", otaProgressPercent);
-        }
-        delay(40);
+        vTaskDelay(pdMS_TO_TICKS(20));
         return;
     }
 
+    loopTimeStart = micros();
+    if (loopTimeEnd > 0)
+    {
+        loopTime = (loopTimeStart - loopTimeEnd) / 1000.0f;
+    }
+    loopTimeEnd = loopTimeStart;
+
     Read_Sensors();
     Device_Protection();
-    System_Processes();
     Charging_Algorithm();
-    Onboard_Telemetry();
 
-    if (OLED_Connected)
-    {
-        IO_Panel_Update();
-    }
-    else
-    {
-        LCD_Menu();
-    }
+    vTaskDelay(pdMS_TO_TICKS(4));
 }

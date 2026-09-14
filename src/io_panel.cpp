@@ -91,6 +91,15 @@ namespace
     unsigned long lastEditTurnMs = 0;
     unsigned long lastDrawMs = 0;
 
+    static void sendOledBufferSafe()
+    {
+        if (lockI2C(pdMS_TO_TICKS(35)))
+        {
+            oled.sendBuffer();
+            unlockI2C();
+        }
+    }
+
     void setOledSleepState(bool sleep)
     {
         if (oledSleeping == sleep)
@@ -99,7 +108,11 @@ namespace
         }
 
         oledSleeping = sleep;
-        oled.setPowerSave(oledSleeping ? 1 : 0);
+        if (lockI2C(pdMS_TO_TICKS(35)))
+        {
+            oled.setPowerSave(oledSleeping ? 1 : 0);
+            unlockI2C();
+        }
         if (!oledSleeping)
         {
             refreshRequested = true;
@@ -135,18 +148,22 @@ namespace
 
         if (encoderQuarterSteps >= encoderQuarterStepsPerMove)
         {
+            portENTER_CRITICAL_ISR(&encoderMux);
             if (encoderDetentsPending < 16)
             {
                 encoderDetentsPending++;
             }
+            portEXIT_CRITICAL_ISR(&encoderMux);
             encoderQuarterSteps = 0;
         }
         else if (encoderQuarterSteps <= -encoderQuarterStepsPerMove)
         {
+            portENTER_CRITICAL_ISR(&encoderMux);
             if (encoderDetentsPending > -16)
             {
                 encoderDetentsPending--;
             }
+            portEXIT_CRITICAL_ISR(&encoderMux);
             encoderQuarterSteps = 0;
         }
     }
@@ -235,62 +252,63 @@ namespace
         }
 
         const unsigned long now = millis();
-        const unsigned long dt = (lastEditTurnMs == 0) ? 1000 : (now - lastEditTurnMs);
+        const unsigned long dt = (lastEditTurnMs == 0 || (now - lastEditTurnMs > 400)) ? 1000 : (now - lastEditTurnMs);
         lastEditTurnMs = now;
 
         int gain = 1;
         if (item.type == VALUE_FLOAT)
         {
-            // Aggressive turbo profile for fast rotary turns on 0.01-step items.
-            if (dt <= 25)
-            {
-                gain = 400;
-            }
-            else if (dt <= 40)
-            {
-                gain = 200;
-            }
-            else if (dt <= 60)
-            {
-                gain = 100;
-            }
-            else if (dt <= 90)
+            // Calibrated smooth acceleration for 0.01-step parameters:
+            // dt > 100ms: slow/individual detent -> gain = 1  (exact 0.01 step)
+            // dt 60..100ms: steady turn         -> gain = 5  (0.05 step)
+            // dt 35..60ms:  brisk rotation      -> gain = 10 (0.10 step)
+            // dt 20..35ms:  fast spin           -> gain = 25 (0.25 step)
+            // dt <= 20ms:   rapid flick         -> gain = 50 (0.50 step)
+            if (dt <= 20)
             {
                 gain = 50;
             }
-            else if (dt <= 130)
+            else if (dt <= 35)
             {
-                gain = 20;
+                gain = 25;
             }
-            else if (dt <= 200)
+            else if (dt <= 60)
             {
-                gain = 8;
+                gain = 10;
+            }
+            else if (dt <= 100)
+            {
+                gain = 5;
+            }
+            else
+            {
+                gain = 1;
             }
         }
         else
         {
             if (dt <= 30)
             {
-                gain = 20;
-            }
-            else if (dt <= 50)
-            {
-                gain = 10;
-            }
-            else if (dt <= 80)
-            {
                 gain = 5;
             }
-            else if (dt <= 140)
+            else if (dt <= 60)
             {
                 gain = 2;
+            }
+            else
+            {
+                gain = 1;
             }
         }
 
         int16_t scaled = (int16_t)abs(rawDelta) * gain;
-        if (item.type == VALUE_FLOAT && scaled > 600)
+        if (item.type == VALUE_FLOAT && scaled > 100)
         {
-            scaled = 600;
+            scaled = 100;
+        }
+        else if (item.type == VALUE_INT && scaled > 10)
+        {
+            scaled = 10;
         }
         return (rawDelta > 0) ? scaled : -scaled;
     }
@@ -634,7 +652,7 @@ namespace
             oled.drawStr(0, 64, line);
         }
 
-        oled.sendBuffer();
+        sendOledBufferSafe();
     }
 
     void drawSettingsPage()
@@ -676,7 +694,7 @@ namespace
             }
         }
 
-        oled.sendBuffer();
+        sendOledBufferSafe();
     }
 
     void ensureSelectionVisible()
@@ -772,7 +790,7 @@ void IO_Panel_Init()
     oled.drawStr(0, 14, "MPPT IO PANEL READY");
     oled.drawStr(0, 28, "Hold encoder to open");
     oled.drawStr(0, 42, "settings table menu");
-    oled.sendBuffer();
+    sendOledBufferSafe();
 
     oledSleepEnabled = true;
     oledSleeping = false;
@@ -845,14 +863,14 @@ void IO_Panel_Update()
             }
             else
             {
-                statusPage += (encoderDelta > 0) ? 1 : -1;
-                if (statusPage > 5)
+                statusPage += encoderDelta;
+                while (statusPage > 5)
                 {
-                    statusPage = 0;
+                    statusPage -= 6;
                 }
-                if (statusPage < 0)
+                while (statusPage < 0)
                 {
-                    statusPage = 5;
+                    statusPage += 6;
                 }
             }
             encoderDelta = 0;
@@ -871,14 +889,14 @@ void IO_Panel_Update()
             }
             else
             {
-                selectedIndex += (encoderDelta > 0) ? 1 : -1;
-                if (selectedIndex < 0)
+                selectedIndex += encoderDelta;
+                while (selectedIndex < 0)
                 {
-                    selectedIndex = menuItemCount - 1;
+                    selectedIndex += menuItemCount;
                 }
-                if (selectedIndex >= menuItemCount)
+                while (selectedIndex >= menuItemCount)
                 {
-                    selectedIndex = 0;
+                    selectedIndex -= menuItemCount;
                 }
                 ensureSelectionVisible();
             }
@@ -903,6 +921,12 @@ void IO_Panel_Update()
         }
 
         // Single-switch mode: no AUX button. Use long press to cancel edit or close menu.
+    }
+
+    const unsigned long minRedrawIntervalMs = 40;
+    if (now - lastDrawMs < minRedrawIntervalMs)
+    {
+        return;
     }
 
     const unsigned long redrawIntervalMs = settingsOpen ? settingsRedrawIntervalMs : statusRedrawIntervalMs;
@@ -936,50 +960,80 @@ void IO_Panel_ShowOTAProgress(unsigned int percent, int state)
         return;
     }
 
+    static int lastState = -1;
+    static unsigned int lastPercent = 999;
+    static unsigned long lastDrawMs = 0;
+    unsigned long now = millis();
+
+    bool stateChanged = (state != lastState);
+    bool percentChanged = (percent != lastPercent);
+
+    if (!stateChanged && !percentChanged)
+    {
+        return;
+    }
+
+    // Rate-limit consecutive percentage updates to max 10 FPS (100ms) to ensure stability
+    if (!stateChanged && (now - lastDrawMs < 100))
+    {
+        return;
+    }
+
+    lastState = state;
+    lastPercent = percent;
+    lastDrawMs = now;
+
     setOledSleepState(false);
 
     oled.clearBuffer();
-
-    // Header bar
     oled.setFont(u8g2_font_6x12_tf);
-    oled.drawStr(10, 11, "OTA FIRMWARE FLASH");
-    oled.drawLine(0, 14, 127, 14);
 
+    // 1. Header Bar (Centered, y=11)
+    oled.drawStr(10, 11, "OTA FIRMWARE FLASH");
+    oled.drawLine(0, 13, 127, 13);
+
+    // 2. Status Line (Centered, y=26)
     if (state == OTA_STATE_ERROR)
     {
-        oled.setFont(u8g2_font_6x12_tf);
-        oled.drawStr(18, 30, "UPDATE FAILED!");
-        oled.setFont(u8g2_font_6x10_tf);
-        oled.drawStr(4, 44, "Check network & retry");
-        oled.drawStr(10, 58, "Resuming normal mode");
+        oled.drawStr(22, 26, "UPDATE FAILED!");
+        oled.drawStr(10, 39, "Check WiFi & Retry");
+        oled.drawStr(7, 62, "Normal Mode Resumed");
     }
     else if (state == OTA_STATE_SUCCESS || percent >= 100)
     {
-        oled.setFont(u8g2_font_6x12_tf);
-        oled.drawStr(14, 28, "FLASH COMPLETED!");
-        oled.setFont(u8g2_font_6x10_tf);
-        oled.drawStr(16, 42, "Rebooting ESP32...");
-        oled.drawFrame(12, 48, 104, 10);
-        oled.drawBox(14, 50, 100, 6);
+        oled.drawStr(13, 26, "UPDATE COMPLETED!");
+        oled.drawStr(7, 39, "Rebooting Device...");
+        oled.drawFrame(13, 43, 102, 9);
+        oled.drawBox(14, 44, 100, 7);
+        oled.drawStr(16, 62, "DO NOT POWER OFF");
     }
     else
     {
-        oled.setFont(u8g2_font_6x10_tf);
-        oled.drawStr(6, 25, "CHARGER OFF: Flashing");
-
-        char pctStr[20];
-        snprintf(pctStr, sizeof(pctStr), "Progress: %3u%%", percent);
-        oled.drawStr(24, 37, pctStr);
-
-        oled.drawFrame(12, 41, 104, 10);
-        unsigned int barWidth = (percent > 100) ? 100 : percent;
-        if (barWidth > 0)
+        if (state == OTA_STATE_STARTING || percent == 0)
         {
-            oled.drawBox(14, 43, barWidth, 6);
+            oled.drawStr(7, 26, "PREPARING FLASH...");
+        }
+        else
+        {
+            oled.drawStr(13, 26, "FLASHING FIRMWARE");
         }
 
-        oled.drawStr(16, 61, "DO NOT TURN OFF");
+        // 3. Progress percentage (Centered, y=39)
+        char pctStr[20];
+        unsigned int displayPct = (percent > 100) ? 100 : percent;
+        snprintf(pctStr, sizeof(pctStr), "Progress: %3u%%", displayPct);
+        oled.drawStr(22, 39, pctStr);
+
+        // 4. Progress bar (y=43..51, 100 inner pixels for 1:1 percent mapping)
+        oled.drawFrame(13, 43, 102, 9);
+        if (displayPct > 0)
+        {
+            oled.drawBox(14, 44, displayPct, 7);
+        }
+
+        // 5. Footer warning (Centered, y=62)
+        oled.drawStr(16, 62, "DO NOT POWER OFF");
     }
 
-    oled.sendBuffer();
+    sendOledBufferSafe();
 }

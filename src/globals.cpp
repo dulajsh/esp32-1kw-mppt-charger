@@ -4,11 +4,29 @@
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 TaskHandle_t Core2;
 Adafruit_ADS1115 ads;
+SemaphoreHandle_t i2cMutex = NULL;
 uint8_t adsDetectedAddress = 0;
 float rawADC_A0 = 0.0f;
 float rawADC_A1 = 0.0f;
 float rawADC_A2 = 0.0f;
 float rawADC_A3 = 0.0f;
+
+bool lockI2C(TickType_t waitTicks)
+{
+    if (i2cMutex == NULL)
+    {
+        return true;
+    }
+    return (xSemaphoreTake(i2cMutex, waitTicks) == pdTRUE);
+}
+
+void unlockI2C()
+{
+    if (i2cMutex != NULL)
+    {
+        xSemaphoreGive(i2cMutex);
+    }
+}
 
 //===== WiFi CREDENTIALS =====
 char auth[] = "geryVCW7mfVhKnqazrBPQmowDg1p2TA-";
