@@ -99,6 +99,9 @@ bool OTE = 0;
 bool ADS_Connected = 0;
 bool LCD_Connected = 0;
 bool OLED_Connected = 0;
+volatile bool otaUpdating = false;
+volatile unsigned int otaProgressPercent = 0;
+volatile int otaState = 0;
 
 //===== SYSTEM PARAMETERS (INTEGERS) =====
 int inputSource = 0;

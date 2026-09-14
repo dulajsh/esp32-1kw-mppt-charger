@@ -136,6 +136,19 @@ extern bool ADS_Connected;
 extern bool LCD_Connected;
 extern bool OLED_Connected;
 
+enum OTAState
+{
+    OTA_STATE_IDLE = 0,
+    OTA_STATE_STARTING = 1,
+    OTA_STATE_IN_PROGRESS = 2,
+    OTA_STATE_SUCCESS = 3,
+    OTA_STATE_ERROR = 4
+};
+
+extern volatile bool otaUpdating;
+extern volatile unsigned int otaProgressPercent;
+extern volatile int otaState;
+
 //===== SYSTEM PARAMETERS (INTEGERS) =====
 extern int inputSource;
 extern int temperature;

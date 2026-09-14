@@ -928,3 +928,58 @@ void IO_Panel_Update()
         drawStatusPage();
     }
 }
+
+void IO_Panel_ShowOTAProgress(unsigned int percent, int state)
+{
+    if (!OLED_Connected)
+    {
+        return;
+    }
+
+    setOledSleepState(false);
+
+    oled.clearBuffer();
+
+    // Header bar
+    oled.setFont(u8g2_font_6x12_tf);
+    oled.drawStr(10, 11, "OTA FIRMWARE FLASH");
+    oled.drawLine(0, 14, 127, 14);
+
+    if (state == OTA_STATE_ERROR)
+    {
+        oled.setFont(u8g2_font_6x12_tf);
+        oled.drawStr(18, 30, "UPDATE FAILED!");
+        oled.setFont(u8g2_font_6x10_tf);
+        oled.drawStr(4, 44, "Check network & retry");
+        oled.drawStr(10, 58, "Resuming normal mode");
+    }
+    else if (state == OTA_STATE_SUCCESS || percent >= 100)
+    {
+        oled.setFont(u8g2_font_6x12_tf);
+        oled.drawStr(14, 28, "FLASH COMPLETED!");
+        oled.setFont(u8g2_font_6x10_tf);
+        oled.drawStr(16, 42, "Rebooting ESP32...");
+        oled.drawFrame(12, 48, 104, 10);
+        oled.drawBox(14, 50, 100, 6);
+    }
+    else
+    {
+        oled.setFont(u8g2_font_6x10_tf);
+        oled.drawStr(6, 25, "CHARGER OFF: Flashing");
+
+        char pctStr[20];
+        snprintf(pctStr, sizeof(pctStr), "Progress: %3u%%", percent);
+        oled.drawStr(24, 37, pctStr);
+
+        oled.drawFrame(12, 41, 104, 10);
+        unsigned int barWidth = (percent > 100) ? 100 : percent;
+        if (barWidth > 0)
+        {
+            oled.drawBox(14, 43, barWidth, 6);
+        }
+
+        oled.drawStr(16, 61, "DO NOT TURN OFF");
+    }
+
+    oled.sendBuffer();
+}

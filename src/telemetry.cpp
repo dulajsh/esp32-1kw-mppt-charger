@@ -17,6 +17,7 @@
 
 #include "telemetry.h"
 #include "charging.h"
+#include "io_panel.h"
 
 namespace
 {
@@ -43,34 +44,82 @@ namespace
             }
 
             // CRITICAL HARDWARE PROTECTION:
-            // Disable buck converter and charging to prevent erratic PWM during flash
+            // Immediately stop all charging & switching processes
+            otaUpdating = true;
+            otaState = OTA_STATE_STARTING;
+            otaProgressPercent = 0;
             chargingPause = true;
+
             buck_Disable();
+            ledcWrite(pwmChannel, 0);
             bypassEnable = 0;
             digitalWrite(backflow_MOSFET, LOW);
             digitalWrite(FAN, LOW);
 
             Serial.println("\n> [OTA] Update starting (" + type + ")...");
+            if (OLED_Connected)
+            {
+                IO_Panel_ShowOTAProgress(0, OTA_STATE_STARTING);
+            }
+            else if (LCD_Connected)
+            {
+                lcd.clear();
+                lcd.setCursor(0, 0);
+                lcd.print("OTA FLASH START ");
+                lcd.setCursor(0, 1);
+                lcd.print("CHARGER STOPPED ");
+            }
         });
 
         ArduinoOTA.onEnd([]() {
+            otaState = OTA_STATE_SUCCESS;
+            otaProgressPercent = 100;
             Serial.println("\n> [OTA] Update finished successfully. Rebooting...");
+            if (OLED_Connected)
+            {
+                IO_Panel_ShowOTAProgress(100, OTA_STATE_SUCCESS);
+            }
+            else if (LCD_Connected)
+            {
+                lcd.clear();
+                lcd.setCursor(0, 0);
+                lcd.print("FLASH COMPLETED!");
+                lcd.setCursor(0, 1);
+                lcd.print("Rebooting ESP32 ");
+            }
         });
 
         ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+            otaState = OTA_STATE_IN_PROGRESS;
             if (total > 0)
             {
-                Serial.printf("> [OTA] Progress: %u%%\r", (progress / (total / 100)));
+                otaProgressPercent = (progress / (total / 100));
+                Serial.printf("> [OTA] Progress: %u%%\r", otaProgressPercent);
             }
         });
 
         ArduinoOTA.onError([](ota_error_t error) {
+            otaState = OTA_STATE_ERROR;
             Serial.printf("> [OTA] Error[%u]: ", error);
             if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
             else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
             else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
             else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
             else if (error == OTA_END_ERROR) Serial.println("End Failed");
+
+            if (OLED_Connected)
+            {
+                IO_Panel_ShowOTAProgress(otaProgressPercent, OTA_STATE_ERROR);
+            }
+            else if (LCD_Connected)
+            {
+                lcd.clear();
+                lcd.setCursor(0, 0);
+                lcd.print("OTA FAILED!     ");
+            }
+            delay(3000);
+            otaUpdating = false;
+            chargingPause = false;
         });
 
         ArduinoOTA.begin();
@@ -351,6 +400,11 @@ void Wireless_Telemetry()
                 setupOTA();
             }
             ArduinoOTA.handle();
+        }
+
+        if (otaUpdating)
+        {
+            return;
         }
 
 #if HAS_BLYNK

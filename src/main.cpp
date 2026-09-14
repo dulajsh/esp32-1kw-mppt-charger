@@ -119,6 +119,29 @@ void setup()
 //===== CORE1: LOOP (DUAL CORE MODE) =====
 void loop()
 {
+    if (otaUpdating)
+    {
+        buck_Disable();
+        ledcWrite(pwmChannel, 0);
+        bypassEnable = 0;
+        digitalWrite(backflow_MOSFET, LOW);
+        digitalWrite(FAN, LOW);
+
+        if (OLED_Connected)
+        {
+            IO_Panel_ShowOTAProgress(otaProgressPercent, otaState);
+        }
+        else if (LCD_Connected)
+        {
+            lcd.setCursor(0, 0);
+            lcd.print("OTA UPDATING... ");
+            lcd.setCursor(0, 1);
+            lcd.printf("Progress: %3u%%  ", otaProgressPercent);
+        }
+        delay(40);
+        return;
+    }
+
     Read_Sensors();
     Device_Protection();
     System_Processes();
