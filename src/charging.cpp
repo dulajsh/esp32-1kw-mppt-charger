@@ -239,7 +239,8 @@ void predictivePWM()
     }
     else
     {
-        PPWM = (PPWM_margin * pwmMax * voltageOutput) / (100.00 * voltageInput);
+        float vTarget = (output_Mode == 0) ? psuVoltageTarget : voltageOutput;
+        PPWM = (PPWM_margin * pwmMax * vTarget) / (100.00 * voltageInput);
     }
     PPWM = constrain(PPWM, 0, pwmMaxLimited);
 }
@@ -261,47 +262,139 @@ void PWM_Modulation()
 
 void Charging_Algorithm()
 {
-    applyBatteryPreset(false);
-    updateChargingStageTransitions();
+    if (output_Mode == 1)
+    {
+        applyBatteryPreset(false);
+        updateChargingStageTransitions();
+    }
 
     if (ERR > 0 || chargingPause == 1)
     {
         buck_Disable();
+        return;
     }
-    else
+
+    if (output_Mode == 0)
     {
-        if (REC == 1)
+        // ======================== PSU CV / CC MODE ========================
+        // Fast soft-seed if PWM was stopped/zero
+        if (PWM == 0 && voltageInput > (psuVoltageTarget + voltageDropout))
         {
-            REC = 0;
-            buck_Disable();
-            lcd.setCursor(0, 0);
-            lcd.print("POWER SOURCE    ");
-            lcd.setCursor(0, 1);
-            lcd.print("DETECTED        ");
-            Serial.println("> Solar Panel Detected");
-            Serial.print("> Computing For Predictive PWM ");
-            for (int i = 0; i < 40; i++)
-            {
-                Serial.print(".");
-                delay(30);
-            }
-            Serial.println("");
-            Read_Sensors();
             predictivePWM();
-            PWM = PPWM;
-            setChargingStage(STAGE_BULK);
-            updateStageTargets();
-            lcd.clear();
+            PWM = (PPWM * 80) / 100;
+            if (PWM < 10)
+            {
+                PWM = 10;
+            }
+        }
+
+        // CC Check: Output current limit enforcement
+        if (currentOutput >= psuCurrentLimit)
+        {
+            // Constant Current (CC) Mode: decrease PWM to regulate current at limit
+            psuModeStatus = true;
+            float iErr = currentOutput - psuCurrentLimit;
+            int step = 1;
+            if (iErr > 2.0f) step = 5;
+            else if (iErr > 0.5f) step = 2;
+            PWM -= step;
         }
         else
         {
-            if (MPPT_Mode == 0)
+            // Constant Voltage (CV) Mode: adjust PWM to match psuVoltageTarget
+            psuModeStatus = false;
+            float vErr = psuVoltageTarget - voltageOutput;
+            if (vErr > 0.05f)
             {
-                if (currentOutput > chargeCurrentTarget)
+                int step = 1;
+                if (vErr > 5.0f) step = 15;
+                else if (vErr > 2.0f) step = 8;
+                else if (vErr > 0.5f) step = 3;
+                PWM += step;
+            }
+            else if (vErr < -0.05f)
+            {
+                int step = 1;
+                if (vErr < -5.0f) step = 15;
+                else if (vErr < -2.0f) step = 8;
+                else if (vErr < -0.5f) step = 3;
+                PWM -= step;
+            }
+        }
+        PWM_Modulation();
+        return;
+    }
+
+    // ======================== CHARGER MODE ========================
+    if (REC == 1)
+    {
+        REC = 0;
+        buck_Disable();
+        lcd.setCursor(0, 0);
+        lcd.print("POWER SOURCE    ");
+        lcd.setCursor(0, 1);
+        lcd.print("DETECTED        ");
+        Serial.println("> Solar Panel Detected");
+        Serial.print("> Computing For Predictive PWM ");
+        for (int i = 0; i < 40; i++)
+        {
+            Serial.print(".");
+            delay(30);
+        }
+        Serial.println("");
+        Read_Sensors();
+        predictivePWM();
+        PWM = PPWM;
+        setChargingStage(STAGE_BULK);
+        updateStageTargets();
+        lcd.clear();
+    }
+    else
+    {
+        if (MPPT_Mode == 0)
+        {
+            if (currentOutput > chargeCurrentTarget)
+            {
+                PWM--;
+            }
+            else if (voltageOutput > chargeVoltageTarget)
+            {
+                PWM--;
+            }
+            else if (voltageOutput < chargeVoltageTarget)
+            {
+                PWM++;
+            }
+            else
+            {
+            }
+            PWM_Modulation();
+        }
+        else
+        {
+            if (currentOutput > chargeCurrentTarget)
+            {
+                PWM--;
+            }
+            else if (voltageOutput > chargeVoltageTarget)
+            {
+                PWM--;
+            }
+            else
+            {
+                if (powerInput > powerInputPrev && voltageInput > voltageInputPrev)
                 {
                     PWM--;
                 }
-                else if (voltageOutput > chargeVoltageTarget)
+                else if (powerInput > powerInputPrev && voltageInput < voltageInputPrev)
+                {
+                    PWM++;
+                }
+                else if (powerInput < powerInputPrev && voltageInput > voltageInputPrev)
+                {
+                    PWM++;
+                }
+                else if (powerInput < powerInputPrev && voltageInput < voltageInputPrev)
                 {
                     PWM--;
                 }
@@ -309,48 +402,10 @@ void Charging_Algorithm()
                 {
                     PWM++;
                 }
-                else
-                {
-                }
-                PWM_Modulation();
+                powerInputPrev = powerInput;
+                voltageInputPrev = voltageInput;
             }
-            else
-            {
-                if (currentOutput > chargeCurrentTarget)
-                {
-                    PWM--;
-                }
-                else if (voltageOutput > chargeVoltageTarget)
-                {
-                    PWM--;
-                }
-                else
-                {
-                    if (powerInput > powerInputPrev && voltageInput > voltageInputPrev)
-                    {
-                        PWM--;
-                    }
-                    else if (powerInput > powerInputPrev && voltageInput < voltageInputPrev)
-                    {
-                        PWM++;
-                    }
-                    else if (powerInput < powerInputPrev && voltageInput > voltageInputPrev)
-                    {
-                        PWM++;
-                    }
-                    else if (powerInput < powerInputPrev && voltageInput < voltageInputPrev)
-                    {
-                        PWM--;
-                    }
-                    else if (voltageOutput < chargeVoltageTarget)
-                    {
-                        PWM++;
-                    }
-                    powerInputPrev = powerInput;
-                    voltageInputPrev = voltageInput;
-                }
-                PWM_Modulation();
-            }
+            PWM_Modulation();
         }
     }
 }

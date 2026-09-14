@@ -85,6 +85,10 @@ void factoryReset()
     EEPROM.write(18, 0);
     EEPROM.write(19, 0);
     EEPROM.write(20, 20);
+    EEPROM.write(21, 12);
+    EEPROM.write(22, 0);
+    EEPROM.write(23, 5);
+    EEPROM.write(24, 0);
     EEPROM.commit();
     loadSettings();
 }
@@ -134,6 +138,20 @@ void loadSettings()
     {
         oledSleepTimeoutSec = 20;
     }
+
+    float psuV = EEPROM.read(21) + (EEPROM.read(22) * 0.01f);
+    if (psuV < 1.0f || psuV > 60.0f || isnan(psuV))
+    {
+        psuV = 12.00f;
+    }
+    psuVoltageTarget = psuV;
+
+    float psuI = EEPROM.read(23) + (EEPROM.read(24) * 0.01f);
+    if (psuI < 0.1f || psuI > 40.0f || isnan(psuI))
+    {
+        psuI = 5.00f;
+    }
+    psuCurrentLimit = psuI;
 }
 
 void saveSettings()
@@ -171,6 +189,16 @@ void saveSettings()
     EEPROM.write(18, batteryPreset);
     EEPROM.write(19, oledDisplayMode);
     EEPROM.write(20, constrain(oledSleepTimeoutSec, 5, 240));
+
+    conv1 = (int)(psuVoltageTarget * 100);
+    conv2 = conv1 % 100;
+    EEPROM.write(21, (int)psuVoltageTarget);
+    EEPROM.write(22, conv2);
+
+    conv1 = (int)(psuCurrentLimit * 100);
+    conv2 = conv1 % 100;
+    EEPROM.write(23, (int)psuCurrentLimit);
+    EEPROM.write(24, conv2);
     EEPROM.commit();
 }
 

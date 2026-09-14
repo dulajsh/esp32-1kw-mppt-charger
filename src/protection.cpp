@@ -30,6 +30,7 @@ void backflowControl()
 void Device_Protection()
 {
     currentRoutineMillis = millis();
+    currentErrorMillis = millis();
     if (currentErrorMillis - prevErrorMillis >= errorTimeLimit)
     {
         prevErrorMillis = currentErrorMillis;
@@ -71,7 +72,8 @@ void Device_Protection()
     {
         OOC = 0;
     }
-    if (voltageOutput > voltageBatteryMax + voltageBatteryThresh)
+    float maxOutputLimit = (output_Mode == 0) ? (psuVoltageTarget + voltageBatteryThresh) : (voltageBatteryMax + voltageBatteryThresh);
+    if (voltageOutput > maxOutputLimit)
     {
         OOV = 1;
         ERR++;
@@ -96,7 +98,7 @@ void Device_Protection()
     {
         REC = 0;
         BNC = 0;
-        if (voltageInput < voltageBatteryMax + voltageDropout)
+        if (voltageInput < vInSystemMin || voltageInput < (psuVoltageTarget + voltageDropout))
         {
             IUV = 1;
             ERR++;

@@ -45,6 +45,9 @@ float voltageBatteryMin = 22.4000;
 float currentCharging = 30.0000;
 float electricalPrice = 9.5000;
 int batteryPreset = 0;
+float psuVoltageTarget = 12.0000;
+float psuCurrentLimit = 5.0000;
+bool psuModeStatus = false;
 int oledDisplayMode = 0;
 int oledSleepTimeoutSec = 20;
 

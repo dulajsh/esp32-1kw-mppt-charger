@@ -47,8 +47,11 @@ namespace
     bool oledSleepEnabled = true;
 
     MenuItem menuItems[] = {
-        {"MPPT Algo", VALUE_BOOL, &MPPT_Mode, 0, 1, 1, 0},
         {"Output Mode", VALUE_BOOL, &output_Mode, 0, 1, 1, 0},
+        {"PSU Volt V", VALUE_FLOAT, &psuVoltageTarget, 1.2f, 60.0f, 0.01f, 2},
+        {"PSU Curr A", VALUE_FLOAT, &psuCurrentLimit, 0.1f, 40.0f, 0.01f, 2},
+        {"MPPT Algo", VALUE_BOOL, &MPPT_Mode, 0, 1, 1, 0},
+        {"Battery Preset", VALUE_INT, &batteryPreset, 0, 5, 1, 0},
         {"Batt Max V", VALUE_FLOAT, &voltageBatteryMax, 10.0f, 60.0f, 0.01f, 2},
         {"Batt Min V", VALUE_FLOAT, &voltageBatteryMin, 10.0f, 60.0f, 0.01f, 2},
         {"Charge A", VALUE_FLOAT, &currentCharging, 0.0f, 50.0f, 0.01f, 2},
@@ -58,7 +61,6 @@ namespace
         {"WiFi Enable", VALUE_BOOL, &enableWiFi, 0, 1, 1, 0},
         {"OLED Sleep", VALUE_BOOL, &oledSleepEnabled, 0, 1, 1, 0},
         {"OLED Timeout", VALUE_INT, &oledSleepTimeoutSec, 5, 240, 5, 0},
-        {"Battery Preset", VALUE_INT, &batteryPreset, 0, 5, 1, 0},
         {"OLED View", VALUE_INT, &oledDisplayMode, 0, 1, 1, 0},
     };
 
@@ -477,7 +479,7 @@ namespace
 
         oled.clearBuffer();
         oled.setFont(u8g2_font_6x12_tf);
-        snprintf(line, sizeof(line), "%s %d/%d", compactChargerView ? "CHARGER VIEW" : "MPPT STATUS", activePage + 1, totalPages);
+        snprintf(line, sizeof(line), "%s %d/%d", output_Mode ? (compactChargerView ? "CHARGER VIEW" : "MPPT STATUS") : "PSU STATUS", activePage + 1, totalPages);
         oled.drawStr(0, 10, line);
         drawWiFiIcon(114, 10);
         oled.drawLine(0, 12, 127, 12);
@@ -490,7 +492,14 @@ namespace
             oled.drawStr(0, 38, line);
             snprintf(line, sizeof(line), "Pwr : %5.0fW %7.2fWh", powerInput, Wh);
             oled.drawStr(0, 51, line);
-            snprintf(line, sizeof(line), "Run : %5.2fd Stage %d", daysRunning, chargingStage);
+            if (output_Mode == 0)
+            {
+                snprintf(line, sizeof(line), "PSU : [%s] %4.1fV %4.1fA", psuModeStatus ? "CC" : "CV", psuVoltageTarget, psuCurrentLimit);
+            }
+            else
+            {
+                snprintf(line, sizeof(line), "Run : %5.2fd Stage %d", daysRunning, chargingStage);
+            }
             oled.drawStr(0, 64, line);
         }
         else if (activePage == 0)
@@ -499,10 +508,20 @@ namespace
             oled.drawStr(0, 25, line);
             snprintf(line, sizeof(line), "Out : %5.1fV %4.1fA", voltageOutput, currentOutput);
             oled.drawStr(0, 38, line);
-            snprintf(line, sizeof(line), "Pwr : %5.0fW  Bat %3d%%", powerInput, batteryPercent);
-            oled.drawStr(0, 51, line);
-            snprintf(line, sizeof(line), "Tmp : %2dC   Stage %d", temperature, chargingStage);
-            oled.drawStr(0, 64, line);
+            if (output_Mode == 0)
+            {
+                snprintf(line, sizeof(line), "Pwr : %5.0fW  PSU %s", powerInput, psuModeStatus ? "CC" : "CV");
+                oled.drawStr(0, 51, line);
+                snprintf(line, sizeof(line), "Set : %4.1fV Lim:%4.1fA", psuVoltageTarget, psuCurrentLimit);
+                oled.drawStr(0, 64, line);
+            }
+            else
+            {
+                snprintf(line, sizeof(line), "Pwr : %5.0fW  Bat %3d%%", powerInput, batteryPercent);
+                oled.drawStr(0, 51, line);
+                snprintf(line, sizeof(line), "Tmp : %2dC   Stage %d", temperature, chargingStage);
+                oled.drawStr(0, 64, line);
+            }
         }
         else if (activePage == 1)
         {
@@ -512,7 +531,14 @@ namespace
             oled.drawStr(0, 38, line);
             snprintf(line, sizeof(line), "Days: %8.2f", daysRunning);
             oled.drawStr(0, 51, line);
-            snprintf(line, sizeof(line), "Mode: %s", MPPT_Mode ? "MPPT+CCCV" : "CCCV");
+            if (output_Mode == 0)
+            {
+                snprintf(line, sizeof(line), "Mode: PSU [%s]", psuModeStatus ? "CC" : "CV");
+            }
+            else
+            {
+                snprintf(line, sizeof(line), "Mode: %s", MPPT_Mode ? "MPPT+CCCV" : "CCCV");
+            }
             oled.drawStr(0, 64, line);
         }
         else if (activePage == 2)

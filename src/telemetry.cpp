@@ -189,10 +189,22 @@ void Onboard_Telemetry()
             Serial.print(MPPT_Mode);
             Serial.print(" CM:");
             Serial.print(output_Mode);
-            Serial.print(" BST:");
-            Serial.print(getChargingStageName());
-            Serial.print(" BPRE:");
-            Serial.print(getBatteryPresetName());
+            if (output_Mode == 0)
+            {
+                Serial.print(" PSU:");
+                Serial.print(psuModeStatus ? "CC" : "CV");
+                Serial.print(" PVSET:");
+                Serial.print(psuVoltageTarget, 2);
+                Serial.print(" PISET:");
+                Serial.print(psuCurrentLimit, 2);
+            }
+            else
+            {
+                Serial.print(" BST:");
+                Serial.print(getChargingStageName());
+                Serial.print(" BPRE:");
+                Serial.print(getBatteryPresetName());
+            }
 
             Serial.print(" ");
             Serial.print(" BYP:");

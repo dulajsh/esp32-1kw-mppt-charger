@@ -101,13 +101,17 @@ void Read_Sensors()
         {
             currentInput = 0.0000;
         }
-        if (voltageOutput <= 0)
+        if (voltageOutput < 1.0f)
         {
-            currentOutput = 0.0000;
+            currentOutput = 0.0000f;
         }
         else
         {
             currentOutput = (voltageInput * currentInput) / voltageOutput;
+            if (currentOutput < 0.0f)
+            {
+                currentOutput = 0.0000f;
+            }
         }
     }
     else

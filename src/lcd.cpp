@@ -150,10 +150,17 @@ void displayConfig1()
     lcd.setCursor(13, 0);
     lcd.print(daysRunning, 0);
     lcd.setCursor(0, 1);
-    lcd.print(batteryPercent);
-    lcd.print("%");
-    padding100(batteryPercent);
-    if (BNC == 0)
+    if (output_Mode == 0)
+    {
+        lcd.print(psuModeStatus ? "CC  " : "CV  ");
+    }
+    else
+    {
+        lcd.print(batteryPercent);
+        lcd.print("%");
+        padding100(batteryPercent);
+    }
+    if (BNC == 0 || output_Mode == 0)
     {
         lcd.setCursor(5, 1);
         lcd.print(voltageOutput, 1);
@@ -186,10 +193,17 @@ void displayConfig2()
     lcd.print("A");
     padding10(currentInput);
     lcd.setCursor(0, 1);
-    lcd.print(batteryPercent);
-    lcd.print("%");
-    padding100(batteryPercent);
-    if (BNC == 0)
+    if (output_Mode == 0)
+    {
+        lcd.print(psuModeStatus ? "CC  " : "CV  ");
+    }
+    else
+    {
+        lcd.print(batteryPercent);
+        lcd.print("%");
+        padding100(batteryPercent);
+    }
+    if (BNC == 0 || output_Mode == 0)
     {
         lcd.setCursor(5, 1);
         lcd.print(voltageOutput, 1);
@@ -327,7 +341,7 @@ void LCD_Menu()
 {
     int
         menuPages = 4,
-        subMenuPages = 15,
+        subMenuPages = 17,
         longPressTime = 3000,
         longPressInterval = 500,
         shortPressInterval = 100;
@@ -1642,6 +1656,192 @@ void LCD_Menu()
                     saveSettings();
                     setMenuPage = 0;
                     savedMessageLCD();
+                }
+            }
+        }
+
+        else if (subMenuPage == 16)
+        {
+            lcd.setCursor(0, 0);
+            lcd.print("PSU TARGET VOLT ");
+            if (setMenuPage == 1)
+            {
+                lcd.setCursor(0, 1);
+                lcd.print(" >");
+            }
+            else
+            {
+                lcd.setCursor(0, 1);
+                lcd.print("= ");
+            }
+            lcd.setCursor(2, 1);
+            lcd.print(psuVoltageTarget, 2);
+            lcd.print("V");
+            lcd.print("                ");
+
+            if (setMenuPage == 0)
+            {
+                floatTemp = psuVoltageTarget;
+            }
+            else
+            {
+                if (digitalRead(buttonBack) == 1)
+                {
+                    while (digitalRead(buttonBack) == 1)
+                    {
+                    }
+                    psuVoltageTarget = floatTemp;
+                    cancelledMessageLCD();
+                    setMenuPage = 0;
+                }
+                if (digitalRead(buttonSelect) == 1)
+                {
+                    while (digitalRead(buttonSelect) == 1)
+                    {
+                    }
+                    saveSettings();
+                    setMenuPage = 0;
+                    savedMessageLCD();
+                }
+                currentMenuSetMillis = millis();
+                if (digitalRead(buttonRight) == 1)
+                {
+                    while (digitalRead(buttonRight) == 1)
+                    {
+                        if (millis() - currentMenuSetMillis > longPressTime)
+                        {
+                            psuVoltageTarget += 1.00;
+                            psuVoltageTarget = constrain(psuVoltageTarget, 1.20f, vOutSystemMax);
+                            lcd.setCursor(2, 1);
+                            lcd.print(psuVoltageTarget, 2);
+                            delay(longPressInterval);
+                        }
+                        else
+                        {
+                            psuVoltageTarget += 0.01;
+                            psuVoltageTarget = constrain(psuVoltageTarget, 1.20f, vOutSystemMax);
+                            lcd.setCursor(2, 1);
+                            lcd.print(psuVoltageTarget, 2);
+                            delay(shortPressInterval);
+                        }
+                        lcd.print("V   ");
+                    }
+                }
+                else if (digitalRead(buttonLeft) == 1)
+                {
+                    while (digitalRead(buttonLeft) == 1)
+                    {
+                        if (millis() - currentMenuSetMillis > longPressTime)
+                        {
+                            psuVoltageTarget -= 1.00;
+                            psuVoltageTarget = constrain(psuVoltageTarget, 1.20f, vOutSystemMax);
+                            lcd.setCursor(2, 1);
+                            lcd.print(psuVoltageTarget, 2);
+                            delay(longPressInterval);
+                        }
+                        else
+                        {
+                            psuVoltageTarget -= 0.01;
+                            psuVoltageTarget = constrain(psuVoltageTarget, 1.20f, vOutSystemMax);
+                            lcd.setCursor(2, 1);
+                            lcd.print(psuVoltageTarget, 2);
+                            delay(shortPressInterval);
+                        }
+                        lcd.print("V   ");
+                    }
+                }
+            }
+        }
+
+        else if (subMenuPage == 17)
+        {
+            lcd.setCursor(0, 0);
+            lcd.print("PSU CURRENT LIM ");
+            if (setMenuPage == 1)
+            {
+                lcd.setCursor(0, 1);
+                lcd.print(" >");
+            }
+            else
+            {
+                lcd.setCursor(0, 1);
+                lcd.print("= ");
+            }
+            lcd.setCursor(2, 1);
+            lcd.print(psuCurrentLimit, 2);
+            lcd.print("A");
+            lcd.print("                ");
+
+            if (setMenuPage == 0)
+            {
+                floatTemp = psuCurrentLimit;
+            }
+            else
+            {
+                if (digitalRead(buttonBack) == 1)
+                {
+                    while (digitalRead(buttonBack) == 1)
+                    {
+                    }
+                    psuCurrentLimit = floatTemp;
+                    cancelledMessageLCD();
+                    setMenuPage = 0;
+                }
+                if (digitalRead(buttonSelect) == 1)
+                {
+                    while (digitalRead(buttonSelect) == 1)
+                    {
+                    }
+                    saveSettings();
+                    setMenuPage = 0;
+                    savedMessageLCD();
+                }
+                currentMenuSetMillis = millis();
+                if (digitalRead(buttonRight) == 1)
+                {
+                    while (digitalRead(buttonRight) == 1)
+                    {
+                        if (millis() - currentMenuSetMillis > longPressTime)
+                        {
+                            psuCurrentLimit += 1.00;
+                            psuCurrentLimit = constrain(psuCurrentLimit, 0.10f, cOutSystemMax);
+                            lcd.setCursor(2, 1);
+                            lcd.print(psuCurrentLimit, 2);
+                            delay(longPressInterval);
+                        }
+                        else
+                        {
+                            psuCurrentLimit += 0.01;
+                            psuCurrentLimit = constrain(psuCurrentLimit, 0.10f, cOutSystemMax);
+                            lcd.setCursor(2, 1);
+                            lcd.print(psuCurrentLimit, 2);
+                            delay(shortPressInterval);
+                        }
+                        lcd.print("A   ");
+                    }
+                }
+                else if (digitalRead(buttonLeft) == 1)
+                {
+                    while (digitalRead(buttonLeft) == 1)
+                    {
+                        if (millis() - currentMenuSetMillis > longPressTime)
+                        {
+                            psuCurrentLimit -= 1.00;
+                            psuCurrentLimit = constrain(psuCurrentLimit, 0.10f, cOutSystemMax);
+                            lcd.setCursor(2, 1);
+                            lcd.print(psuCurrentLimit, 2);
+                            delay(longPressInterval);
+                        }
+                        else
+                        {
+                            psuCurrentLimit -= 0.01;
+                            psuCurrentLimit = constrain(psuCurrentLimit, 0.10f, cOutSystemMax);
+                            lcd.setCursor(2, 1);
+                            lcd.print(psuCurrentLimit, 2);
+                            delay(shortPressInterval);
+                        }
+                        lcd.print("A   ");
+                    }
                 }
             }
         }

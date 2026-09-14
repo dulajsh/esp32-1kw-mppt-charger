@@ -82,6 +82,9 @@ extern float voltageBatteryMin;
 extern float currentCharging;
 extern float electricalPrice;
 extern int batteryPreset;
+extern float psuVoltageTarget;
+extern float psuCurrentLimit;
+extern bool psuModeStatus;
 extern int oledDisplayMode;
 extern int oledSleepTimeoutSec;
 
