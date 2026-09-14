@@ -14,14 +14,83 @@
 
 #include <ArduinoOTA.h>
 #include <ESPmDNS.h>
+#include <WebServer.h>
 
 #include "telemetry.h"
 #include "charging.h"
 #include "io_panel.h"
+#include "web_page.h"
 
 namespace
 {
     bool otaInitialized = false;
+    bool webServerInitialized = false;
+    WebServer webServer(80);
+
+    String buildLiveJson()
+    {
+        char buf[512];
+        const char *modeStr = (output_Mode == 1) ? "CHARGER" : "PSU";
+        const char *statusStr = (output_Mode == 1) 
+            ? ((chargingStage == 0) ? "BULK" : (chargingStage == 1 ? "ABSORPTION" : "FLOAT"))
+            : (psuModeStatus ? "CC LIMIT" : "CV REG");
+
+        const char *presetName = "CUSTOM";
+        if (batteryPreset == 0) presetName = "CUSTOM";
+        else if (batteryPreset == 1) presetName = "LEAD-ACID";
+        else if (batteryPreset == 2) presetName = "AGM";
+        else if (batteryPreset == 3) presetName = "GEL";
+        else if (batteryPreset == 4) presetName = "LIFEPO4";
+        else if (batteryPreset == 5) presetName = "LI-ION";
+
+        float targetV = (output_Mode == 1) ? chargeVoltageTarget : psuVoltageTarget;
+        float limitA = (output_Mode == 1) ? chargeCurrentTarget : psuCurrentLimit;
+
+        snprintf(buf, sizeof(buf),
+            "{\"vin\":%.2f,\"iin\":%.2f,\"pin\":%.1f,"
+            "\"vout\":%.2f,\"iout\":%.2f,\"pout\":%.1f,"
+            "\"eff\":%.1f,\"pwm\":%d,\"pwmMax\":%d,"
+            "\"temp\":%d,\"fan\":%d,\"wh\":%.1f,\"kwh\":%.2f,"
+            "\"savings\":%.2f,\"soc\":%d,\"loop\":%.2f,"
+            "\"mode\":\"%s\",\"status\":\"%s\",\"preset\":\"%s\","
+            "\"targetV\":%.2f,\"limitA\":%.2f,\"err\":%d,"
+            "\"iuv\":%d,\"oov\":%d,\"ioc\":%d,\"ooc\":%d,\"ote\":%d,\"bnc\":%d,\"flv\":%d,"
+            "\"ads\":%d,\"uptime\":%lu}",
+            voltageInput, currentInput, powerInput,
+            voltageOutput, currentOutput, powerOutput,
+            buckEfficiency, PWM, pwmMaxLimited,
+            temperature, digitalRead(FAN), Wh, kWh,
+            energySavings, batteryPercent, loopTime,
+            modeStr, statusStr, presetName,
+            targetV, limitA, ERR,
+            IUV, OOV, IOC, OOC, OTE, BNC, FLV,
+            ADS_Connected ? 1 : 0, secondsElapsed
+        );
+        return String(buf);
+    }
+
+    void handleRoot()
+    {
+        if (webServer.hasArg("data"))
+        {
+            webServer.send(200, "application/json", buildLiveJson());
+            return;
+        }
+        webServer.send_P(200, "text/html", WEB_PAGE_HTML);
+    }
+
+    void setupWebServer()
+    {
+        if (webServerInitialized)
+        {
+            return;
+        }
+        webServer.on("/", handleRoot);
+        webServer.begin();
+        webServerInitialized = true;
+        MDNS.addService("http", "tcp", 80);
+        Serial.println("> [HTTP] Local Web UI started on port 80 (http://fugu-mppt-1kw.local/)");
+    }
 
     void setupOTA()
     {
@@ -360,6 +429,19 @@ void Wireless_Telemetry()
     {
         WIFI = (WiFi.status() == WL_CONNECTED);
 
+        static bool lastWifiConnected = false;
+        if (WIFI && !lastWifiConnected)
+        {
+            lastWifiConnected = true;
+            Serial.print("> [WiFi] Connected! IP address: http://");
+            Serial.println(WiFi.localIP());
+            Serial.println("> [Web UI] Access dashboard at: http://fugu-mppt-1kw.local/ or http://" + WiFi.localIP().toString());
+        }
+        else if (!WIFI)
+        {
+            lastWifiConnected = false;
+        }
+
         if (WIFI)
         {
             if (!otaInitialized)
@@ -367,6 +449,12 @@ void Wireless_Telemetry()
                 setupOTA();
             }
             ArduinoOTA.handle();
+
+            if (!webServerInitialized)
+            {
+                setupWebServer();
+            }
+            webServer.handleClient();
         }
 
         if (otaUpdating)
