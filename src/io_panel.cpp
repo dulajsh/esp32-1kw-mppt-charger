@@ -474,12 +474,23 @@ namespace
     {
         char line[32];
         const bool compactChargerView = (oledDisplayMode == 1);
-        const int totalPages = compactChargerView ? 1 : 5;
+        const int totalPages = compactChargerView ? 1 : 6;
         const int activePage = compactChargerView ? 0 : statusPage;
 
         oled.clearBuffer();
         oled.setFont(u8g2_font_6x12_tf);
-        snprintf(line, sizeof(line), "%s %d/%d", output_Mode ? (compactChargerView ? "CHARGER VIEW" : "MPPT STATUS") : "PSU STATUS", activePage + 1, totalPages);
+        if (compactChargerView)
+        {
+            snprintf(line, sizeof(line), "CHARGER VIEW %d/%d", activePage + 1, totalPages);
+        }
+        else if (activePage == 5)
+        {
+            snprintf(line, sizeof(line), "ERROR STATUS %d/%d", activePage + 1, totalPages);
+        }
+        else
+        {
+            snprintf(line, sizeof(line), "%s %d/%d", output_Mode ? "MPPT STATUS" : "PSU STATUS", activePage + 1, totalPages);
+        }
         oled.drawStr(0, 10, line);
         drawWiFiIcon(114, 10);
         oled.drawLine(0, 12, 127, 12);
@@ -570,7 +581,7 @@ namespace
             snprintf(line, sizeof(line), "Loop:%6.2fms", loopTime);
             oled.drawStr(0, 64, line);
         }
-        else
+        else if (activePage == 4)
         {
             if (!enableWiFi)
             {
@@ -606,6 +617,21 @@ namespace
                 snprintf(line, sizeof(line), "OTA : Waiting WiFi");
                 oled.drawStr(0, 64, line);
             }
+        }
+        else
+        {
+            const char *stateStr = chargingPause ? "PAUSED" : (ERR > 0 ? "FAULT" : "NORMAL");
+            snprintf(line, sizeof(line), "State: %s (ERR:%d)", stateStr, ERR);
+            oled.drawStr(0, 25, line);
+
+            snprintf(line, sizeof(line), "IUV:%d  OOV:%d  BNC:%d", IUV, OOV, BNC);
+            oled.drawStr(0, 38, line);
+
+            snprintf(line, sizeof(line), "IOC:%d  OOC:%d  OTE:%d", IOC, OOC, OTE);
+            oled.drawStr(0, 51, line);
+
+            snprintf(line, sizeof(line), "FLV:%d  ADS:%s  ECnt:%d", FLV, ADS_Connected ? "OK" : "NC", errorCount);
+            oled.drawStr(0, 64, line);
         }
 
         oled.sendBuffer();
@@ -820,13 +846,13 @@ void IO_Panel_Update()
             else
             {
                 statusPage += (encoderDelta > 0) ? 1 : -1;
-                if (statusPage > 4)
+                if (statusPage > 5)
                 {
                     statusPage = 0;
                 }
                 if (statusPage < 0)
                 {
-                    statusPage = 4;
+                    statusPage = 5;
                 }
             }
             encoderDelta = 0;
